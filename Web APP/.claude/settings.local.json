@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed '1d;$d')",
+      "Bash(node --check /tmp/app.js)",
+      "Read(//tmp/**)"
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+# Claude Code local settings
+.claude/settings.local.json
+
+# Arduino build output
+build/
+*.hex
+*.elf
+*.bin
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
