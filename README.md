@@ -1,7 +1,8 @@
 # PSN
 
-- `Microcontroler/` – Arduino firmware (ILI9341 TFT display)
-- `Web APP/` – web interface (`index.html`)
+- `Microcontroler/` – Arduino UNO R4 WiFi firmware (ILI9341 TFT display, WiFi, web server)
+- `Web APP/` – web interface (`index.html`), served by the Arduino
+- `tools/embed_page.py` – copies `Web APP/index.html` into the firmware
 
 ## Setting up the Arduino project
 
@@ -31,7 +32,28 @@ arduino-cli lib install "Adafruit ILI9341@1.6.4" "Adafruit GFX Library@1.12.6" "
 
 ### 2. Open and upload
 
-Open `Microcontroler/Main/sketch_oct2a/sketch_oct2a.ino` in the Arduino IDE. Then select your board and port, and upload.
+Open `Microcontroler/Main/sketch_oct2a/sketch_oct2a.ino` in the Arduino IDE. Then select **Arduino UNO R4 WiFi** and its port, and upload.
+WiFi uses the `WiFiS3` library, which comes with the UNO R4 board package (no extra install).
+
+### 3. Open the web page on the phone
+
+1. Turn on the hotspot **Radu's Galaxy A51** (password `12345678`). It must use the **2.4 GHz** band and **WPA2** security – the UNO R4 cannot join 5 GHz or WPA3-only networks.
+2. Reset the board. It connects first (up to 20 s, the screen stays dark meanwhile), then the display shows `Web: http://<ip>` at the bottom.
+3. On the phone, open that address in the browser.
+
+The Serial Monitor (115200 baud) also prints the connection steps and the IP.
+The WiFi name and password are in `src/Drivers/WifiDriver/WifiDriver.cpp`.
+
+### Changing the web page
+
+Edit `Web APP/index.html`, then run
+
+```sh
+python tools/embed_page.py
+```
+
+and upload again. The script regenerates `src/Drivers/WebDriver/WebPage.h` (never edit that file by hand).
+Opening `index.html` directly from disk still works and runs it in mock mode.
 
 ### Project structure
 
@@ -39,9 +61,16 @@ Open `Microcontroler/Main/sketch_oct2a/sketch_oct2a.ino` in the Arduino IDE. The
 Microcontroler/Main/sketch_oct2a/
 ├── sketch_oct2a.ino            main program – only calls driver functions
 └── src/Drivers/
-    └── DispDriver/
-        ├── DispDriver.h        display interface (Disp_Init, Disp_TestScreen, ...)
-        └── DispDriver.cpp      implementation (pins, Adafruit library calls)
+    ├── WifiDriver/
+    │   ├── WifiDriver.h        WiFi interface (Wifi_Init, Wifi_Task, Wifi_GetIp, ...)
+    │   └── WifiDriver.cpp      hotspot name/password, WiFiS3 library calls
+    ├── DispDriver/
+    │   ├── DispDriver.h        display interface (Disp_Init, Disp_Draw, Disp_ShowIp, ...)
+    │   └── DispDriver.cpp      implementation (pins, Adafruit library calls)
+    └── WebDriver/
+        ├── WebDriver.h         web server interface (Web_Init, Web_Task, Web_GetTarget)
+        ├── WebDriver.cpp       HTTP server on port 80: /, /status, /set?target=
+        └── WebPage.h           GENERATED from Web APP/index.html
 ```
 
 Drivers live in `src/` because the Arduino IDE only compiles files inside the sketch folder, and it compiles everything under `src/` automatically.
