@@ -3,6 +3,7 @@
 - `Microcontroler/` – Arduino UNO R4 WiFi firmware (ILI9341 TFT display, WiFi, web server)
 - `Web APP/` – web interface (`index.html`), served by the Arduino
 - `tools/embed_page.py` – copies `Web APP/index.html` into the firmware
+- `docs/SystemFlow.md` – how the system works: modules, startup, main loop, HTTP API, diagrams
 
 ## Setting up the Arduino project
 
@@ -19,6 +20,8 @@ The sketch needs these libraries. They all come from the Arduino Library Manager
 | Adafruit TouchScreen| 1.1.6   |
 | Adafruit TSC2007    | 1.1.2   |
 | Adafruit SH110X     | 2.1.15  |
+
+The DS18B20 temperature sensor also needs **OneWire** and **DallasTemperature** (Library Manager, latest versions).
 
 **Option A – Arduino IDE (easiest):**
 Go to *Tools → Manage Libraries…*, search for **Adafruit ILI9341** and click *Install*.
@@ -41,7 +44,7 @@ WiFi uses the `WiFiS3` library, which comes with the UNO R4 board package (no ex
 2. Reset the board. It connects first (up to 20 s, the screen stays dark meanwhile), then the display shows `Web: http://<ip>` at the bottom.
 3. On the phone, open that address in the browser.
 
-The Serial Monitor (115200 baud) also prints the connection steps and the IP.
+The Serial Monitor (9600 baud) also prints the connection steps and the IP.
 The WiFi name and password are in `src/Drivers/WifiDriver/WifiDriver.cpp`.
 
 ### Changing the web page

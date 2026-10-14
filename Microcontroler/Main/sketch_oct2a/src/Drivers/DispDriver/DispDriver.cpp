@@ -7,7 +7,8 @@
 #define TFT_CS   10
 #define TFT_DC   9
 #define TFT_RST  8
-
+#define TOP_H       24
+#define BOTTOM_H    24   // same height as the top bar
 // static: only this driver can touch the display object
 static Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 
@@ -46,55 +47,77 @@ void Disp_ShowDebug(void)
 #define MAIN_CHAR_W     (6 * MAIN_TEXT_SIZE)   // default font: 6 px wide per size unit
 #define MAIN_LEFT       10
 
-static const char EXPECTED_LABEL[] = "Expected temperature:";
+#define MAIN_LINES      2
 
-// Same space above, between and below the two lines.
-static int mainGap(void)
+static const char EXPECTED_LABEL[] = "Expected temperature:";
+static const char CURRENT_LABEL[]  = "Current temperature:";
+
+// Top of line n (0..MAIN_LINES-1), with the same space above, between and below the lines
+// in the area between the top and bottom bars.
+static int mainLineY(int n)
 {
-  return (tft.height() - 2 * MAIN_LINE_H) / 3;
+  const int areaH = tft.height() - TOP_H - BOTTOM_H;
+  const int gap   = (areaH - MAIN_LINES * MAIN_LINE_H) / (MAIN_LINES + 1);
+  return TOP_H + gap + n * (gap + MAIN_LINE_H);
 }
 
-void Disp_Draw(void)
+void Disp_Draw_Top(const char *time)
 {
-  const int textSize = MAIN_TEXT_SIZE;
-  const int lineH    = MAIN_LINE_H;
-  const int gap      = mainGap();
-  const int left     = MAIN_LEFT;
+  tft.fillRect(0, 0, tft.width(), TOP_H, ILI9341_NAVY);
 
-  tft.fillScreen(ILI9341_BLACK);
+  tft.setTextSize(2);
   tft.setTextColor(ILI9341_WHITE);
-  tft.setTextSize(textSize);
+  tft.setCursor(10, 6);
+  tft.print("Time: ");   // print() continues on the same line,
+  tft.print(time);       // so two calls show up as "Time: 12:34:56"
 
-  tft.setCursor(left, gap);
+}
+
+void Disp_Draw_Middle(void)
+{
+  // Only clear the area between the top and bottom bars, so they stay visible.
+  tft.fillRect(0, TOP_H, tft.width(), tft.height() - TOP_H - BOTTOM_H, ILI9341_BLACK);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(MAIN_TEXT_SIZE);
+
+  tft.setCursor(MAIN_LEFT, mainLineY(0));
   tft.print(EXPECTED_LABEL);
 
-  tft.setCursor(left, 2 * gap + lineH);
-  tft.print("Current temperature:");
+  tft.setCursor(MAIN_LEFT, mainLineY(1));
+  tft.print(CURRENT_LABEL);
 }
 
-void Disp_ShowIp(const char *ip)
+void Disp_Draw_Bottom(const char *ip)
 {
-  const int textSize = 1;
-  const int lineH    = 8 * textSize;
-  const int y        = tft.height() - lineH - 4;
+  static const char PREFIX[] = "Web: http://";
+  const int barY  = tft.height() - BOTTOM_H;
 
-  tft.fillRect(0, y, tft.width(), lineH, ILI9341_BLACK);   // clear the old address
+  const int textSize = 1;
+  const int textH = 8 * textSize;
+
+  tft.fillRect(0, barY, tft.width(), BOTTOM_H, ILI9341_NAVY);   
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(textSize);
-  tft.setCursor(10, y);
-  tft.print("Web: http://");
+  tft.setCursor(MAIN_LEFT, barY + (BOTTOM_H - textH) / 2);   
+  tft.print(PREFIX);
   tft.print(ip);
 }
 
-void Disp_ShowExpected(float temp)
+// Writes a temperature as tenths ("22.5") right after a label of labelLen chars on row y.
+// NAN (sensor missing / failed) is shown as "--.-".
+// Only the value area is cleared, so the label does not flicker.
+static void showTemp(size_t labelLen, int y, float temp)
 {
-  const int x = MAIN_LEFT + (sizeof(EXPECTED_LABEL) - 1) * MAIN_CHAR_W + MAIN_CHAR_W / 2;
-  const int y = mainGap();
+  const int x = MAIN_LEFT + labelLen * MAIN_CHAR_W + MAIN_CHAR_W / 2;
 
   // Printed as tenths ("22.5") so we don't depend on float support in snprintf.
-  int t10 = (int)roundf(temp * 10.0f);
   char text[8];
-  snprintf(text, sizeof(text), "%d.%d", t10 / 10, t10 % 10);
+  if (isnan(temp)) {
+    snprintf(text, sizeof(text), "--.-");
+  } else {
+    int t10 = (int)roundf(temp * 10.0f);
+    snprintf(text, sizeof(text), "%s%d.%d", t10 < 0 ? "-" : "", abs(t10) / 10, abs(t10) % 10);
+  }
 
   tft.fillRect(x, y, tft.width() - x, MAIN_LINE_H, ILI9341_BLACK);   // clear the old value
   tft.setTextColor(ILI9341_WHITE);
@@ -102,3 +125,14 @@ void Disp_ShowExpected(float temp)
   tft.setCursor(x, y);
   tft.print(text);
 }
+
+void Disp_ShowExpected(float temp)
+{
+  showTemp(sizeof(EXPECTED_LABEL) - 1, mainLineY(0), temp);
+}
+
+void Disp_ShowCurrent(float temp)
+{
+  showTemp(sizeof(CURRENT_LABEL) - 1, mainLineY(1), temp);
+}
+

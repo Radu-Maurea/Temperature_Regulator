@@ -11,12 +11,19 @@ void Disp_Init(void);
 void Disp_ShowDebug(void);
 
 // Main screen: black background with the expected and current temperature labels.
-void Disp_Draw(void);
 
+
+// Blue bar at the top of the screen with the current time ("HH:MM:SS").
+void Disp_Draw_Top(const char *time);
 // Writes the expected temperature (degrees C, e.g. 22.5) next to its label.
-void Disp_ShowExpected(float temp);
+
 
 // Small line at the bottom of the screen with the address to open on the phone.
 void Disp_ShowIp(const char *ip);
-
+void Disp_Draw_Bottom(const char *ip);
+void Disp_Draw_Middle(void);
+void Disp_ShowExpected(float temp);
+// Writes the current (measured) temperature (degrees C, e.g. 23.1) next to its label.
+// NAN (sensor missing / failed) shows "--.-".
+void Disp_ShowCurrent(float temp);
 #endif
