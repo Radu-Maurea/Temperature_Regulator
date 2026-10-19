@@ -87,19 +87,29 @@ void Disp_Draw_Middle(void)
   tft.print(CURRENT_LABEL);
 }
 
-void Disp_Draw_Bottom(const char *ip)
+// Clears the bottom bar and leaves the cursor at the start of its text line.
+static void startBottomLine(void)
 {
-  static const char PREFIX[] = "Web: http://";
   const int barY  = tft.height() - BOTTOM_H;
-
   const int textSize = 1;
   const int textH = 8 * textSize;
 
-  tft.fillRect(0, barY, tft.width(), BOTTOM_H, ILI9341_NAVY);   
+  tft.fillRect(0, barY, tft.width(), BOTTOM_H, ILI9341_NAVY);
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(textSize);
-  tft.setCursor(MAIN_LEFT, barY + (BOTTOM_H - textH) / 2);   
-  tft.print(PREFIX);
+  tft.setCursor(MAIN_LEFT, barY + (BOTTOM_H - textH) / 2);
+}
+
+void Disp_ShowConnecting(void)
+{
+  startBottomLine();
+  tft.print("Connecting...");
+}
+
+void Disp_Draw_Bottom(const char *ip)
+{
+  startBottomLine();
+  tft.print("Web: http://");
   tft.print(ip);
 }
 
