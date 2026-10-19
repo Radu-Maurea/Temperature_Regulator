@@ -72,16 +72,28 @@ void Disp_Draw(void)
   tft.print("Current temperature:");
 }
 
-void Disp_ShowIp(const char *ip)
+// Clears the small line at the bottom of the screen and leaves the cursor at its start.
+static void startBottomLine(void)
 {
   const int textSize = 1;
   const int lineH    = 8 * textSize;
   const int y        = tft.height() - lineH - 4;
 
-  tft.fillRect(0, y, tft.width(), lineH, ILI9341_BLACK);   // clear the old address
+  tft.fillRect(0, y, tft.width(), lineH, ILI9341_BLACK);   // clear the old text
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(textSize);
   tft.setCursor(10, y);
+}
+
+void Disp_ShowConnecting(void)
+{
+  startBottomLine();
+  tft.print("Connecting...");
+}
+
+void Disp_ShowIp(const char *ip)
+{
+  startBottomLine();
   tft.print("Web: http://");
   tft.print(ip);
 }

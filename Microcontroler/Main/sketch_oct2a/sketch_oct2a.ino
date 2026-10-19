@@ -5,16 +5,19 @@
 void setup() {
   Serial.begin(115200);
 
-  Wifi_Init();
+  // Display first, so the screen is not dark while WiFi connects (up to 20 s).
   Disp_Init();
   Disp_Draw();
+  Disp_ShowExpected(Web_GetTarget());
+  Disp_ShowConnecting();
+
+  Wifi_Init();
 
   char ip[16];
   Wifi_GetIp(ip, sizeof(ip));
   Disp_ShowIp(ip);
 
   Web_Init();
-  Disp_ShowExpected(Web_GetTarget());
 }
 
 void loop() {
