@@ -38,7 +38,7 @@ WiFi uses the `WiFiS3` library, which comes with the UNO R4 board package (no ex
 ### 3. Open the web page on the phone
 
 1. Turn on the hotspot **Radu's Galaxy A51** (password `12345678`). It must use the **2.4 GHz** band and **WPA2** security – the UNO R4 cannot join 5 GHz or WPA3-only networks.
-2. Reset the board. It connects first (up to 20 s, the screen stays dark meanwhile), then the display shows `Web: http://<ip>` at the bottom.
+2. Reset the board. The display starts right away and shows `Connecting...` at the bottom while it joins the hotspot (up to 20 s), then `Web: http://<ip>`.
 3. On the phone, open that address in the browser.
 
 The Serial Monitor (115200 baud) also prints the connection steps and the IP.
@@ -65,7 +65,7 @@ Microcontroler/Main/sketch_oct2a/
     │   ├── WifiDriver.h        WiFi interface (Wifi_Init, Wifi_Task, Wifi_GetIp, ...)
     │   └── WifiDriver.cpp      hotspot name/password, WiFiS3 library calls
     ├── DispDriver/
-    │   ├── DispDriver.h        display interface (Disp_Init, Disp_Draw, Disp_ShowIp, ...)
+    │   ├── DispDriver.h        display interface (Disp_Init, Disp_Draw, Disp_ShowConnecting, Disp_ShowIp, ...)
     │   └── DispDriver.cpp      implementation (pins, Adafruit library calls)
     └── WebDriver/
         ├── WebDriver.h         web server interface (Web_Init, Web_Task, Web_GetTarget)

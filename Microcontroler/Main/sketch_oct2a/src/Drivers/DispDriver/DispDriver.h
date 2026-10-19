@@ -16,7 +16,11 @@ void Disp_Draw(void);
 // Writes the expected temperature (degrees C, e.g. 22.5) next to its label.
 void Disp_ShowExpected(float temp);
 
+// Small line at the bottom of the screen saying the board is joining the hotspot.
+void Disp_ShowConnecting(void);
+
 // Small line at the bottom of the screen with the address to open on the phone.
+// Replaces the "Connecting..." line.
 void Disp_ShowIp(const char *ip);
 
 #endif
