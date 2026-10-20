@@ -16,4 +16,7 @@ void Web_Task(void);
 // Target temperature set from the page, in degrees C (20 - 50).
 float Web_GetTarget(void);
 
+// Current temperature for /status, in degrees C. NAN makes the page show "--".
+void Web_SetTemp(float t);
+
 #endif

@@ -13,6 +13,7 @@
 
 static WiFiServer server(WEB_PORT);
 static float target = 22.0f;
+static float temp = NAN;   // NAN until the first reading arrives
 
 // Reads one line ("GET /status HTTP/1.1") into line, without the \r\n.
 // Returns false if the client went quiet or disconnected first.
@@ -63,14 +64,27 @@ static void sendPage(WiFiClient &client)
   }
 }
 
+// Writes v with one decimal ("-3.5"), or "null" for NAN.
+// Printed as tenths so we don't depend on float support in snprintf.
+static void printTenths(char *buf, int len, float v)
+{
+  if (isnan(v)) {
+    snprintf(buf, len, "null");
+    return;
+  }
+  int t10 = (int)roundf(fabsf(v) * 10.0f);
+  snprintf(buf, len, "%s%d.%d", (v < 0 && t10 != 0) ? "-" : "", t10 / 10, t10 % 10);
+}
+
 static void sendStatus(WiFiClient &client)
 {
-  // No sensor or heater yet: temp is null (the page shows "--") and power is 0.
-  // Printed as tenths so we don't depend on float support in snprintf.
-  int t10 = (int)roundf(target * 10.0f);
+  // No heater yet, so power is 0.
+  char t[12], tg[12];
+  printTenths(t, sizeof(t), temp);
+  printTenths(tg, sizeof(tg), target);
   char body[80];
   snprintf(body, sizeof(body),
-           "{\"temp\":null,\"target\":%d.%d,\"power\":0,\"fault\":null}", t10 / 10, t10 % 10);
+           "{\"temp\":%s,\"target\":%s,\"power\":0,\"fault\":null}", t, tg);
   sendHeader(client, "200 OK", "application/json");
   client.write((const uint8_t *)body, strlen(body));
 }
@@ -145,4 +159,9 @@ void Web_Task(void)
 float Web_GetTarget(void)
 {
   return target;
+}
+
+void Web_SetTemp(float t)
+{
+  temp = t;
 }
