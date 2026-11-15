@@ -43,18 +43,104 @@ button{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(
 .step:disabled{opacity:.4}
 #out{flex:1;text-align:center;font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums}
 input[type=range]{width:100%;height:40px;margin:18px 0 0;accent-color:var(--accent)}
-#send{width:100%;margin-top:16px;padding:17px;font-size:1.05rem;font-weight:700;background:var(--accent);color:#fff;border-color:var(--accent)}
-#send:disabled{background:none;color:var(--dim);border-color:var(--line)}
+.go{width:100%;margin-top:16px;padding:17px;font-size:1.05rem;font-weight:700;background:var(--accent);color:#fff;border-color:var(--accent)}
+.go:disabled{background:none;color:var(--dim);border-color:var(--line)}
+.duty{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.duty button{height:54px;font-size:1.1rem;font-weight:600;font-variant-numeric:tabular-nums}
+.duty button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.now{font-size:.85rem;color:var(--dim);text-align:center;margin:12px 0 0}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .stale{opacity:.45}
 .hint{font-size:.75rem;color:var(--dim);text-align:center;margin:14px 0 0}
 [hidden]{display:none !important}
+
+/* ---------- Mode picker ---------- */
+.back{font-size:.8rem;font-weight:600;padding:7px 10px;border-radius:999px;color:var(--dim)}
+.choices{display:grid;gap:12px}
+.choice{display:block;width:100%;text-align:left;padding:18px;border-radius:14px}
+.choice b{display:block;font-size:1.15rem;margin-bottom:4px}
+.choice span{color:var(--dim);font-size:.9rem}
+.choice:active{border-color:var(--accent)}
+.sub{color:var(--dim);margin:0 0 16px}
+
+/* ---------- Normal interface ---------- */
+:root{--s1:#2a78d6; --s2:#eb6834; --grid:#e6e8ec;
+      --lcd-bg:#1d3fc4; --lcd-cell:#2449d6; --lcd-ink:#eaf1ff; --bezel:#22262d}
+@media (prefers-color-scheme:dark){
+  :root{--s1:#3987e5; --s2:#d95926; --grid:#2a3038; --lcd-cell:#2348d0; --bezel:#0b0d10}
+}
+.nwrap{max-width:560px;margin:0 auto;padding:16px 14px 32px}
+.ngrid{display:grid;gap:12px}
+.ngrid .card{margin-bottom:0}
+.col{display:grid;gap:12px}
+#sim{margin-left:auto;font:600 .7rem/1 system-ui;letter-spacing:.08em;padding:7px 10px;border-radius:999px;border:1px solid var(--warn);color:var(--warn)}
+.bezel{background:var(--bezel);border-radius:12px;padding:14px}
+.lcd{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;background:var(--lcd-bg);border-radius:6px;padding:10px 8px;
+     box-shadow:inset 0 0 0 2px rgba(0,0,0,.35)}
+.lcd span{aspect-ratio:5/8;background:var(--lcd-cell);color:var(--lcd-ink);border-radius:2px;display:flex;align-items:center;justify-content:center;
+          font:700 clamp(.85rem,4.6vw,1.3rem)/1 ui-monospace,"Cascadia Mono",Consolas,monospace}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.keys button{height:58px;font-size:1rem;font-weight:700;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.keys button.pm{font-size:1.6rem}
+.keys button:active,.keys button.down{background:var(--accent);color:#fff;border-color:var(--accent)}
+.khint{font-size:.75rem;color:var(--dim);text-align:center;margin:12px 0 0}
+.params{display:grid;gap:8px;margin-top:6px}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) 7.5rem 2.6rem;align-items:center;gap:10px}
+.prow label{font-weight:600}
+.prow label small{display:block;font-weight:400;font-size:.75rem;color:var(--dim)}
+.prow input{width:100%;height:44px;padding:0 10px;font:600 1.05rem system-ui,sans-serif;font-variant-numeric:tabular-nums;text-align:right;
+            color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px}
+.prow input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.prow input[aria-invalid=true]{border-color:var(--bad)}
+.prow input.saved{border-color:var(--ok)}
+.unit{color:var(--dim);font-size:.85rem}
+#pstatus{min-height:1.3em;font-size:.85rem;margin:10px 0 0}
+#pstatus.err{color:var(--bad)} #pstatus.ok{color:var(--ok)}
+.note{font-size:.8rem;color:var(--dim);margin:12px 0 0}
+.linkbtn{font-size:.8rem;padding:8px 12px;margin-top:10px;color:var(--dim)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.tile .lbl{margin-bottom:2px}
+.tile b{font-size:1.15rem;font-variant-numeric:tabular-nums}
+.chead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.chead h2{font-size:.95rem;margin:0;font-weight:600}
+.seg{margin-left:auto;display:flex;gap:4px}
+.seg button{padding:6px 10px;font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums}
+.seg button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.legend{display:flex;gap:16px;font-size:.8rem;color:var(--dim);margin-bottom:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.plot{position:relative}
+#chart{display:block;width:100%;height:240px}
+#tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+     font-size:.8rem;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.12);white-space:nowrap;font-variant-numeric:tabular-nums}
+#tip i{display:inline-block;width:10px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+#tip .t{color:var(--dim)}
+#empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;color:var(--dim);font-size:.9rem}
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<!-- ===== Mode picker (shown on every load) ===== -->
+<div class="wrap" id="picker">
+  <header><h1>Temperature Regulator</h1></header>
+  <p class="sub">Choose an interface</p>
+  <div class="choices">
+    <button class="choice" id="pickNormal">
+      <b>Normal</b>
+      <span>16&times;2 LCD menu with OK / Cancel / + / &minus; and a temperature graph. Front-end only &mdash; simulated, not connected to the board.</span>
+    </button>
+    <button class="choice" id="pickDebug">
+      <b>Debug</b>
+      <span>Live connection to the Arduino: current temperature, target and bulb power.</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== Debug interface (talks to the board) ===== -->
+<div class="wrap" id="debugView" hidden>
 
 <header>
+  <button class="back" data-back aria-label="Back to mode selection">&lsaquo; Mode</button>
   <h1>Temperature Regulator</h1>
   <!-- Visible only in mock mode. Hidden test hook: tap it to cycle faults. -->
   <button id="mock" hidden title="Tap to cycle simulated faults">MOCK</button>
@@ -84,11 +170,83 @@ input[type=range]{width:100%;height:40px;margin:18px 0 0;accent-color:var(--acce
     </div>
     <input type="range" id="slider" min="20" max="50" step="0.5" value="22"
            aria-label="Target temperature in degrees Celsius">
-    <button id="send" disabled>Set</button>
+    <button class="go" id="send" disabled>Set</button>
   </fieldset>
 </div>
 
+<div class="card">
+  <fieldset>
+    <legend>Bulb power (PWM, pin 3)</legend>
+    <div class="duty" id="duty">
+      <button data-d="0" aria-pressed="false">Off</button>
+      <button data-d="25" aria-pressed="false">25%</button>
+      <button data-d="50" aria-pressed="false">50%</button>
+      <button data-d="100" aria-pressed="false">100%</button>
+    </div>
+    <button class="go" id="dsend" disabled>Apply</button>
+  </fieldset>
+  <p class="now">In effect: <span id="dnow">--</span></p>
+</div>
+
 <p class="hint" id="hint">Range 20&ndash;50 &deg;C, 0.5 &deg;C steps</p>
+</div>
+
+<!-- ===== Normal interface (front-end only, simulated) ===== -->
+<div class="nwrap" id="normalView" hidden>
+<header>
+  <button class="back" data-back aria-label="Back to mode selection">&lsaquo; Mode</button>
+  <h1>Temperature Regulator</h1>
+  <span id="sim" title="Front-end only: the regulator is simulated in the browser">SIMULATION</span>
+</header>
+
+<div class="ngrid">
+    <div class="card">
+      <div class="bezel">
+        <div class="lcd" id="lcd" role="img" aria-label="LCD display"></div>
+      </div>
+      <div class="keys">
+        <button id="kCancel" aria-label="Cancel">Cancel</button>
+        <button id="kMinus" class="pm" aria-label="Minus">&minus;</button>
+        <button id="kPlus" class="pm" aria-label="Plus">+</button>
+        <button id="kOk" aria-label="OK">OK</button>
+      </div>
+      <p class="khint">Keyboard: Enter = OK &middot; Esc = Cancel &middot; &uarr;/&darr; or +/&minus; = change. Hold + / &minus; to repeat.</p>
+    </div>
+
+    <div class="card">
+      <span class="lbl">Parameters</span>
+      <div class="params" id="params"></div>
+      <p id="pstatus" aria-live="polite"></p>
+      <p class="note">Type a value and press Enter (or tap outside the box) to save. Times: <b>mm:ss</b> or minutes (5.5 = 05:30). You can also change them from the LCD menu. Values are stored in this browser in place of the board's non-volatile memory, so they survive a page reload.</p>
+      <button class="linkbtn" id="resetDef">Reset to defaults</button>
+    </div>
+
+  <div class="card">
+    <div class="chead">
+      <h2>Temperature over time</h2>
+      <div class="seg" id="speed" aria-label="Simulation speed">
+        <button data-s="1" aria-pressed="false">1&times;</button>
+        <button data-s="10" aria-pressed="true">10&times;</button>
+        <button data-s="60" aria-pressed="false">60&times;</button>
+      </div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><span class="lbl">Stage</span><b id="tStage">Stopped</b></div>
+      <div class="tile"><span class="lbl">Remaining</span><b id="tRem">--:--</b></div>
+      <div class="tile"><span class="lbl">Heater</span><b id="tPow">0 %</b></div>
+    </div>
+    <div class="legend">
+      <span><i style="border-color:var(--s1)"></i>Temperature</span>
+      <span><i style="border-color:var(--s2);border-top-style:dashed"></i>Setpoint (profile)</span>
+    </div>
+    <div class="plot" id="plot">
+      <canvas id="chart" aria-label="Temperature and setpoint over time"></canvas>
+      <div id="empty">Start the process from the LCD: OK &rarr; &ldquo;Start ciclu&rdquo; &rarr; OK.</div>
+      <div id="tip" hidden></div>
+    </div>
+    <button class="linkbtn" id="csv">Download data (CSV)</button>
+  </div>
+</div>
 </div>
 
 <script>
@@ -113,7 +271,7 @@ function realCall(path){
 }
 
 /* --- mock backend: simulates the regulator so the UI can be tested --- */
-var sim = {temp:ROOM, target:22, power:0, fault:null, t:Date.now()};
+var sim = {temp:ROOM, target:22, duty:0, power:0, fault:null, t:Date.now()};
 function mockCall(path){
   var now = Date.now();
   var dt = Math.min((now - sim.t) / 1000, 5);   // seconds since last step
@@ -121,12 +279,12 @@ function mockCall(path){
 
   var m = /target=([\d.]+)/.exec(path);
   if(m) sim.target = Math.max(20, Math.min(50, parseFloat(m[1])));
+  m = /duty=(\d+)/.exec(path);
+  if(m && [0, 25, 50, 100].indexOf(+m[1]) >= 0) sim.duty = +m[1];
 
-  // Proportional controller: more error -> more bulb power. Any fault
-  // cuts the bulb, as the real regulator will.
-  var err = sim.target - sim.temp;
-  sim.power = sim.fault ? 0 :
-    Math.round(Math.max(0, Math.min(100, err * 40)));
+  // Bulb power is set by hand from the page, like the real firmware.
+  // Any fault cuts the bulb.
+  sim.power = sim.fault ? 0 : sim.duty;
   // Bulb heats; the room always pulls the sensor back toward ambient.
   sim.temp += (sim.power / 100) * 0.9 * dt;
   sim.temp -= (sim.temp - ROOM) * 0.02 * dt;
@@ -162,7 +320,8 @@ function call(path, wait){
 
 var api = {
   status: function(){ return call("/status", false); },
-  setTarget: function(v){ return call("/set?target=" + v.toFixed(1), true); }
+  setTarget: function(v){ return call("/set?target=" + v.toFixed(1), true); },
+  setDuty: function(d){ return call("/pwm?duty=" + d, true); }
 };
 
 /* === 2. STATE + RENDERING === */
@@ -172,6 +331,9 @@ var device = null;        // target currently in effect on the regulator
 var sending = false;      // a /set request is in flight
 var fails = 0;            // consecutive failed requests
 var last = null;          // last good /status payload
+var duty = null;          // bulb power staged on the buttons, %
+var devDuty = null;       // bulb power currently in effect on the board, %
+var dsending = false;     // a /pwm request is in flight
 
 function render(){
   $("out").textContent = target.toFixed(1);
@@ -185,6 +347,15 @@ function render(){
   $("send").disabled = sending || !pending;
   $("send").textContent = sending ? "Sending…"
     : pending ? "Set " + target.toFixed(1) + " °C" : "Set";
+
+  [].forEach.call($("duty").children, function(b){
+    b.setAttribute("aria-pressed", +b.dataset.d === duty);
+  });
+  var dpending = devDuty !== null && duty !== devDuty;
+  $("dsend").disabled = dsending || !dpending;
+  $("dsend").textContent = dsending ? "Sending…"
+    : dpending ? "Apply " + (duty ? duty + "%" : "Off") : "Apply";
+  $("dnow").textContent = devDuty === null ? "--" : devDuty ? devDuty + "%" : "Off";
 
   var offline = fails >= 2;
   $("live").classList.toggle("stale", offline);
@@ -228,6 +399,9 @@ function apply(s){
   device = s.target;
   // Follow the device's target, but never overwrite an unsent local edit.
   if(prev === null || target === prev) target = device;
+  var dprev = devDuty;
+  devDuty = s.power;
+  if(dprev === null || duty === dprev) duty = devDuty;
   render();
 }
 
@@ -255,6 +429,17 @@ $("send").onclick = function(){
     .then(function(){ sending = false; render(); });
 };
 
+[].forEach.call($("duty").children, function(b){
+  b.onclick = function(){ duty = +b.dataset.d; render(); };
+});
+
+$("dsend").onclick = function(){
+  dsending = true;
+  render();
+  api.setDuty(duty).then(apply, function(){ fails++; })
+    .then(function(){ dsending = false; render(); });
+};
+
 /* Mock-mode indicator doubles as the hidden fault trigger. */
 if(MOCK){
   $("mock").hidden = false;
@@ -268,9 +453,545 @@ if(MOCK){
   };
 }
 
-render();
-poll();
-setInterval(poll, 2000);
+/* Debug polling only runs while the debug view is open. */
+var pollTimer = null;
+function startDebug(){
+  render();
+  poll();
+  if(!pollTimer) pollTimer = setInterval(poll, 2000);
+}
+function stopDebug(){
+  clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+/* === 4. MODE PICKER === */
+function showMode(mode){
+  $("picker").hidden = mode !== null;
+  $("debugView").hidden = mode !== "debug";
+  $("normalView").hidden = mode !== "normal";
+  if(mode === "debug") startDebug(); else stopDebug();
+  if(mode === "normal") Normal.start(); else Normal.stop();
+  window.scrollTo(0, 0);
+}
+$("pickDebug").onclick = function(){ showMode("debug"); };
+$("pickNormal").onclick = function(){ showMode("normal"); };
+[].forEach.call(document.querySelectorAll("[data-back]"), function(b){
+  b.onclick = function(){ showMode(null); };
+});
+</script>
+
+<script>
+"use strict";
+/* ================= NORMAL INTERFACE =================
+   Front-end only. The regulator (heater, sensor, PID and the
+   heat -> hold -> cool profile) is simulated in the browser, so the
+   LCD menu and the graph can be designed before the firmware has them.
+   Nothing here talks to the board. */
+var Normal = (function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------- 1. Parameters (non-volatile: browser storage stands in for EEPROM) ---------- */
+  var KEY = "tr.params.v1";
+  var DEF = {tset:45, tinc:300, tmen:600, trac:300, kp:8, ki:0.05, kd:20};
+  var DEFS = {   // menu order, limits, step and how the value is shown on the LCD
+    tset: {name:"TSET",        min:20, max:50,   step:0.5,  fmt:function(v){ return v.toFixed(1) + "°C"; }},
+    tinc: {name:"t incalzire", min:0,  max:5990, step:10,   fmt:mmss},
+    tmen: {name:"t mentinere", min:0,  max:5990, step:10,   fmt:mmss},
+    trac: {name:"t racire",    min:0,  max:5990, step:10,   fmt:mmss},
+    kp:   {name:"KP",          min:0,  max:99.9, step:0.1,  fmt:function(v){ return v.toFixed(1); }},
+    ki:   {name:"KI",          min:0,  max:9.99, step:0.01, fmt:function(v){ return v.toFixed(2); }},
+    kd:   {name:"KD",          min:0,  max:99.9, step:0.1,  fmt:function(v){ return v.toFixed(1); }}
+  };
+  var ORDER = ["tset", "tinc", "tmen", "trac", "kp", "ki", "kd"];
+
+  function clampParam(k, v){
+    var d = DEFS[k];
+    v = Math.round(v / d.step) * d.step;
+    return +Math.max(d.min, Math.min(d.max, v)).toFixed(2);
+  }
+  function load(){
+    var p = {};
+    var saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(KEY)); }catch(e){}
+    ORDER.forEach(function(k){
+      var v = saved && typeof saved[k] === "number" && isFinite(saved[k]) ? saved[k] : DEF[k];
+      p[k] = clampParam(k, v);
+    });
+    return p;
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){}
+    renderParams();
+  }
+  var P = load();
+
+  /* ---------- 2. Simulated regulator ---------- */
+  var AMB = 22;                 // room temperature, degrees C
+  var HEAT = 0.5;               // degrees C per second at 100 % heater
+  var LOSS = 0.01;              // heat loss toward the room, per second
+  var STAGES = [
+    {k:"inc", lcd:"INCALZIRE", label:"Heating", dur:function(){ return P.tinc; }},
+    {k:"men", lcd:"MENTINERE", label:"Holding", dur:function(){ return P.tmen; }},
+    {k:"rac", lcd:"RACIRE",    label:"Cooling", dur:function(){ return P.trac; }}
+  ];
+  var sim = {
+    T: AMB, power: 0, state: "idle",   // idle | run | done
+    stage: 0, el: 0, runT: 0, startT: AMB,
+    integ: 0, prevT: AMB, plan: 0,
+    hist: [], bounds: [], lastSample: -1e9
+  };
+  var speed = 10;
+
+  function setpoint(){
+    if(sim.state !== "run") return null;
+    var s = STAGES[sim.stage], d = s.dur(), f = d > 0 ? Math.min(1, sim.el / d) : 1;
+    if(s.k === "inc") return sim.startT + (P.tset - sim.startT) * f;
+    if(s.k === "men") return P.tset;
+    return P.tset + (AMB - P.tset) * f;
+  }
+  function measured(){ return Math.round(sim.T * 16) / 16; }   // DS18B20: 1/16 degree steps
+  function remaining(){
+    return sim.state === "run" ? Math.max(0, STAGES[sim.stage].dur() - sim.el) : 0;
+  }
+
+  function startRun(){
+    sim.state = "run"; sim.stage = 0; sim.el = 0; sim.runT = 0;
+    sim.startT = sim.T; sim.integ = 0; sim.prevT = sim.T;
+    sim.hist = []; sim.lastSample = -1e9;
+    sim.bounds = [{t:0, label:STAGES[0].lcd}];
+    sim.plan = P.tinc + P.tmen + P.trac;
+    skipEmpty();
+  }
+  function stopRun(){ sim.state = "idle"; sim.power = 0; }
+
+  // Moves on past finished (or zero-length) stages.
+  function skipEmpty(){
+    while(sim.state === "run" && sim.el >= STAGES[sim.stage].dur()){
+      sim.el -= STAGES[sim.stage].dur();
+      sim.stage++;
+      if(sim.stage >= STAGES.length){ sim.state = "done"; sim.power = 0; return; }
+      sim.bounds.push({t:sim.runT - sim.el, label:STAGES[sim.stage].lcd});
+    }
+  }
+
+  function step(dt){
+    if(sim.state === "run"){
+      sim.el += dt; sim.runT += dt;
+      skipEmpty();
+    }
+    var sp = setpoint();
+    if(sp !== null){
+      // PID: derivative on the measurement (no kick when the setpoint moves),
+      // integral clamped so it alone never asks for more than 0..100 %.
+      var T = measured(), e = sp - T;
+      sim.integ += e * dt;
+      if(P.ki > 0) sim.integ = Math.max(0, Math.min(100 / P.ki, sim.integ));
+      var deriv = -(T - sim.prevT) / dt;
+      sim.prevT = T;
+      sim.power = Math.max(0, Math.min(100, P.kp * e + P.ki * sim.integ + P.kd * deriv));
+    }else{
+      sim.power = 0;
+    }
+    sim.T += (sim.power / 100 * HEAT - (sim.T - AMB) * LOSS) * dt;
+
+    if((sim.state === "run" || sim.state === "done") && sim.runT - sim.lastSample >= 2 && sim.hist.length < 5000){
+      sim.lastSample = sim.runT;
+      sim.hist.push({t:sim.runT, T:measured(), sp:sp, p:sim.power,
+                     st: sim.state === "run" ? STAGES[sim.stage].label : "Done"});
+    }
+  }
+
+  /* ---------- 3. LCD 16x2 + menu ---------- */
+  var cells = [];
+  (function(){
+    for(var i = 0; i < 32; i++){
+      var c = document.createElement("span");
+      $("lcd").appendChild(c);
+      cells.push(c);
+    }
+  })();
+  function fit(s){ s = String(s); return s.length >= 16 ? s.slice(0, 16) : s + "                ".slice(s.length); }
+  function right(a, b){ a = String(a); b = String(b); return fit(a + "                ".slice(0, Math.max(1, 16 - a.length - b.length)) + b); }
+  function center(s){ var pad = Math.max(0, Math.floor((16 - s.length) / 2)); return fit("                ".slice(0, pad) + s); }
+  function lcd(l1, l2){
+    var t = fit(l1) + fit(l2);
+    for(var i = 0; i < 32; i++){
+      var ch = t.charAt(i);
+      if(cells[i].textContent !== ch) cells[i].textContent = ch === " " ? "" : ch;
+    }
+    $("lcd").setAttribute("aria-label", "LCD: " + fit(l1).trim() + " / " + fit(l2).trim());
+  }
+
+  // Menu: item 0 starts/stops the process, the rest edit a parameter.
+  var ui = {screen:"home", idx:0, val:0, msg:null, msgUntil:0, back:"home"};
+  var MENU_N = ORDER.length + 1;
+
+  function blinkOn(){ return Math.floor(Date.now() / 450) % 2 === 0; }
+
+  function drawLcd(){
+    if(ui.screen === "msg" && Date.now() >= ui.msgUntil) ui.screen = ui.back;
+    if(ui.screen === "msg"){ lcd(center(ui.msg[0]), center(ui.msg[1])); return; }
+
+    if(ui.screen === "home"){
+      var l1 = "S:" + P.tset.toFixed(1) + "° C:" + measured().toFixed(1) + "°";
+      var l2;
+      if(sim.state === "run") l2 = right(STAGES[sim.stage].lcd, mmss(remaining()));
+      else if(sim.state === "done") l2 = right("GATA", "OK=MENIU");
+      else l2 = right("OPRIT", "OK=MENIU");
+      lcd(l1, l2);
+      return;
+    }
+    if(ui.screen === "menu"){
+      var n = (ui.idx + 1) + "/" + MENU_N;
+      if(ui.idx === 0){
+        var running = sim.state === "run";
+        lcd(right(">" + (running ? "Stop ciclu" : "Start ciclu"), n),
+            running ? "  OK = opreste" : "  OK = porneste");
+      }else{
+        var k = ORDER[ui.idx - 1];
+        lcd(right(">" + DEFS[k].name, n), "  " + DEFS[k].fmt(P[k]));
+      }
+      return;
+    }
+    // edit
+    var key = ORDER[ui.idx - 1];
+    var v = DEFS[key].fmt(ui.val);
+    lcd("EDIT " + DEFS[key].name,
+        center(blinkOn() ? "< " + v + " >" : "< " + v.replace(/./g, " ") + " >"));
+  }
+
+  function message(a, b, then){
+    ui.msg = [a, b]; ui.msgUntil = Date.now() + 1000; ui.back = then; ui.screen = "msg";
+  }
+
+  function press(key, fast){
+    if(ui.screen === "msg") return;
+    if(ui.screen === "home"){
+      if(key === "ok"){ ui.screen = "menu"; ui.idx = 0; }
+    }else if(ui.screen === "menu"){
+      if(key === "plus")  ui.idx = (ui.idx + 1) % MENU_N;
+      if(key === "minus") ui.idx = (ui.idx + MENU_N - 1) % MENU_N;
+      if(key === "cancel") ui.screen = "home";
+      if(key === "ok"){
+        if(ui.idx === 0){
+          if(sim.state === "run"){ stopRun(); message("Ciclu", "oprit", "home"); }
+          else { startRun(); message("Ciclu", "pornit", "home"); }
+        }else{
+          ui.val = P[ORDER[ui.idx - 1]];
+          ui.screen = "edit";
+        }
+      }
+    }else if(ui.screen === "edit"){
+      var k = ORDER[ui.idx - 1], d = DEFS[k];
+      var mult = fast ? 10 : 1;
+      if(key === "plus")  ui.val = clampParam(k, ui.val + d.step * mult);
+      if(key === "minus") ui.val = clampParam(k, ui.val - d.step * mult);
+      if(key === "ok"){ P[k] = ui.val; save(); message("Salvat", d.name, "menu"); }
+      if(key === "cancel") message("Anulat", d.name, "menu");
+    }
+    drawLcd();
+  }
+
+  // + and - repeat while held, and speed up after ~2 s.
+  var hold = null;
+  function holdStart(key, btn){
+    holdStop();
+    press(key, false);
+    btn.classList.add("down");
+    var t0 = Date.now();
+    hold = {btn:btn, timer:setTimeout(function rep(){
+      press(key, Date.now() - t0 > 2000);
+      hold.timer = setTimeout(rep, 90);
+    }, 450)};
+  }
+  function holdStop(){
+    if(!hold) return;
+    clearTimeout(hold.timer);
+    hold.btn.classList.remove("down");
+    hold = null;
+  }
+  [["kPlus", "plus"], ["kMinus", "minus"]].forEach(function(pair){
+    var b = $(pair[0]);
+    b.addEventListener("pointerdown", function(e){ e.preventDefault(); holdStart(pair[1], b); });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(function(ev){ b.addEventListener(ev, holdStop); });
+    b.addEventListener("click", function(e){ if(e.detail === 0) press(pair[1], false); });   // keyboard activation
+  });
+  $("kOk").onclick = function(){ press("ok"); };
+  $("kCancel").onclick = function(){ press("cancel"); };
+
+  document.addEventListener("keydown", function(e){
+    if($("normalView").hidden || e.target.tagName === "INPUT" ||
+       e.target.tagName === "BUTTON" && (e.key === "Enter" || e.key === " ")) return;
+    var map = {"Enter":"ok", "Escape":"cancel", "Backspace":"cancel", "ArrowUp":"plus", "+":"plus", "=":"plus",
+               "ArrowDown":"minus", "-":"minus"};
+    var k = map[e.key];
+    if(!k) return;
+    e.preventDefault();
+    press(k, false);
+  });
+
+  /* ---------- 4. Parameter list + controls ---------- */
+  // One text box per parameter. Typed values are checked, limited to the
+  // allowed range, rounded to the step and saved like the LCD menu does.
+  var INPUT = {
+    tset: {unit:"°C", hint:"20 – 50, step 0.5",         show:function(v){ return v.toFixed(1); }},
+    tinc: {unit:"min",     hint:"00:00 – 99:50, step 10 s", show:mmss, time:true},
+    tmen: {unit:"min",     hint:"00:00 – 99:50, step 10 s", show:mmss, time:true},
+    trac: {unit:"min",     hint:"00:00 – 99:50, step 10 s", show:mmss, time:true},
+    kp:   {unit:"",        hint:"0 – 99.9",                  show:function(v){ return v.toFixed(1); }},
+    ki:   {unit:"",        hint:"0 – 9.99",                  show:function(v){ return v.toFixed(2); }},
+    kd:   {unit:"",        hint:"0 – 99.9",                  show:function(v){ return v.toFixed(1); }}
+  };
+  var boxes = {};
+
+  // "45,5" / "45.5" -> 45.5;  times: "5:30" -> 330 s, "5.5" -> 330 s. NaN if not valid.
+  function parseInput(k, s){
+    s = s.trim().replace(",", ".");
+    var m;
+    if(INPUT[k].time){
+      if((m = /^(\d{1,2}):(\d{1,2})$/.exec(s)) && +m[2] < 60) return +m[1] * 60 + +m[2];
+      if(/^\d+(\.\d+)?$/.test(s)) return parseFloat(s) * 60;
+      return NaN;
+    }
+    return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
+  }
+
+  function status(text, cls){
+    $("pstatus").textContent = text;
+    $("pstatus").className = cls || "";
+  }
+
+  function commit(k){
+    var box = boxes[k], d = DEFS[k];
+    var v = parseInput(k, box.value);
+    if(isNaN(v)){
+      box.setAttribute("aria-invalid", "true");
+      status(d.name + ": " + (INPUT[k].time ? "write a time like 05:30 or 5.5" : "write a number like " + INPUT[k].show(DEF[k])), "err");
+      return false;
+    }
+    var c = clampParam(k, v);
+    box.setAttribute("aria-invalid", "false");
+    P[k] = c;
+    save();
+    box.value = INPUT[k].show(c);
+    var note = Math.abs(c - v) > 1e-9 && (v < d.min || v > d.max) ? " (limited to the allowed range)" : "";
+    status("Saved " + d.name + " = " + INPUT[k].show(c) + (INPUT[k].unit ? " " + INPUT[k].unit : "") + note, "ok");
+    box.classList.add("saved");
+    setTimeout(function(){ box.classList.remove("saved"); }, 900);
+    drawLcd();
+    return true;
+  }
+
+  ORDER.forEach(function(k){
+    var row = document.createElement("div");
+    row.className = "prow";
+    row.innerHTML = '<label for="p-' + k + '">' + DEFS[k].name + "<small>" + INPUT[k].hint + "</small></label>" +
+      '<input id="p-' + k + '" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" enterkeyhint="done">' +
+      '<span class="unit">' + INPUT[k].unit + "</span>";
+    $("params").appendChild(row);
+    var box = boxes[k] = row.querySelector("input");
+    box.addEventListener("keydown", function(e){
+      if(e.key === "Enter"){ e.preventDefault(); if(commit(k)) box.blur(); }
+      if(e.key === "Escape"){ box.value = INPUT[k].show(P[k]); box.setAttribute("aria-invalid", "false"); status(""); box.blur(); }
+    });
+    box.addEventListener("blur", function(){
+      if(box.value === INPUT[k].show(P[k])) return;     // nothing changed
+      if(!commit(k)){
+        box.value = INPUT[k].show(P[k]);
+        box.setAttribute("aria-invalid", "false");
+        status(DEFS[k].name + ": not a valid value, kept " + box.value, "err");
+      }
+    });
+  });
+
+  // Puts the saved values in the boxes, except the one being typed in.
+  function renderParams(){
+    ORDER.forEach(function(k){
+      if(document.activeElement !== boxes[k]) boxes[k].value = INPUT[k].show(P[k]);
+    });
+  }
+  var resetArmed = 0;
+  $("resetDef").onclick = function(){
+    if(Date.now() - resetArmed > 3000){
+      resetArmed = Date.now();
+      this.textContent = "Tap again to reset";
+      var b = this;
+      setTimeout(function(){ b.textContent = "Reset to defaults"; }, 3000);
+      return;
+    }
+    resetArmed = 0;
+    ORDER.forEach(function(k){ P[k] = DEF[k]; });
+    save();
+    status("Defaults restored", "ok");
+    this.textContent = "Reset to defaults";
+    drawLcd();
+  };
+  [].forEach.call($("speed").children, function(b){
+    b.onclick = function(){
+      speed = +b.dataset.s;
+      [].forEach.call($("speed").children, function(o){ o.setAttribute("aria-pressed", o === b); });
+    };
+  });
+  $("csv").onclick = function(){
+    var rows = ["t_s,temp_c,setpoint_c,heater_pct,stage"].concat(sim.hist.map(function(h){
+      return [h.t.toFixed(0), h.T.toFixed(2), h.sp === null ? "" : h.sp.toFixed(2), h.p.toFixed(0), h.st].join(",");
+    }));
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([rows.join("\n")], {type:"text/csv"}));
+    a.download = "temperature.csv";
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  };
+
+  function renderTiles(){
+    $("tStage").textContent = sim.state === "run" ? STAGES[sim.stage].label
+                            : sim.state === "done" ? "Done" : "Stopped";
+    $("tRem").textContent = sim.state === "run" ? mmss(remaining()) : "--:--";
+    $("tPow").textContent = Math.round(sim.power) + " %";
+  }
+
+  /* ---------- 5. Chart (canvas, one axis: degrees C) ---------- */
+  var hover = null;   // index into sim.hist under the pointer
+  function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function drawChart(){
+    var cv = $("chart"), dpr = window.devicePixelRatio || 1;
+    var W = cv.clientWidth, H = cv.clientHeight;
+    if(cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    }
+    var g = cv.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+
+    var h = sim.hist;
+    $("empty").hidden = h.length > 0;
+    var L = 34, R = 58, Tp = 8, B = 22;
+    var pw = W - L - R, ph = H - Tp - B;
+
+    var lo = AMB - 2, hi = P.tset + 3;
+    h.forEach(function(s){ lo = Math.min(lo, s.T); hi = Math.max(hi, s.T, s.sp === null ? -1e9 : s.sp); });
+    lo = Math.floor(lo / 5) * 5; hi = Math.ceil(hi / 5) * 5;
+    var tmax = Math.max(60, sim.plan, h.length ? h[h.length - 1].t : 0);
+    var X = function(t){ return L + t / tmax * pw; };
+    var Y = function(v){ return Tp + (hi - v) / (hi - lo) * ph; };
+
+    var ink = css("--dim"), grid = css("--grid"), s1 = css("--s1"), s2 = css("--s2");
+    g.font = "11px system-ui,sans-serif";
+    g.lineWidth = 1;
+
+    // grid + y labels
+    var ystep = hi - lo > 30 ? 10 : 5;
+    g.fillStyle = ink; g.textAlign = "right"; g.textBaseline = "middle";
+    for(var v = lo; v <= hi; v += ystep){
+      g.strokeStyle = grid; g.beginPath(); g.moveTo(L, Y(v) + .5); g.lineTo(L + pw, Y(v) + .5); g.stroke();
+      g.fillText(v + "°", L - 6, Y(v));
+    }
+    // x labels in minutes
+    var mins = tmax / 60, xstep = [1, 2, 5, 10, 15, 30, 60].find(function(s){ return mins / s <= 6; }) || 120;
+    g.textAlign = "center"; g.textBaseline = "top";
+    for(var m = 0; m <= mins + 1e-6; m += xstep) g.fillText(m + " min", X(m * 60), Tp + ph + 6);
+
+    // stage boundaries
+    g.setLineDash([3, 3]); g.strokeStyle = grid; g.textAlign = "left";
+    sim.bounds.forEach(function(b){
+      var x = Math.round(X(b.t)) + .5;
+      g.beginPath(); g.moveTo(x, Tp); g.lineTo(x, Tp + ph); g.stroke();
+      g.fillText(b.label, x + 4, Tp + 2);
+    });
+    g.setLineDash([]);
+    if(!h.length) return;
+
+    function line(get, color, dash){
+      g.strokeStyle = color; g.lineWidth = 2; g.lineJoin = "round"; g.setLineDash(dash || []);
+      g.beginPath();
+      var pen = false;
+      h.forEach(function(s){
+        var v = get(s);
+        if(v === null){ pen = false; return; }
+        pen ? g.lineTo(X(s.t), Y(v)) : g.moveTo(X(s.t), Y(v));
+        pen = true;
+      });
+      g.stroke(); g.setLineDash([]);
+    }
+    line(function(s){ return s.sp; }, s2, [6, 4]);
+    line(function(s){ return s.T; }, s1);
+
+    // direct labels at the line ends, nudged apart if they would overlap
+    var last = h[h.length - 1], ly1 = Y(last.T), ly2 = last.sp === null ? null : Y(last.sp);
+    if(ly2 !== null && Math.abs(ly1 - ly2) < 13){
+      var mid = (ly1 + ly2) / 2, up = ly1 <= ly2 ? -1 : 1;
+      ly1 = mid + up * 7; ly2 = mid - up * 7;
+    }
+    g.textAlign = "left"; g.textBaseline = "middle"; g.font = "600 11px system-ui,sans-serif";
+    g.fillStyle = css("--fg");
+    g.fillText(last.T.toFixed(1) + "°", X(last.t) + 8, ly1);
+    if(ly2 !== null){ g.fillStyle = ink; g.fillText(last.sp.toFixed(1) + "°", X(last.t) + 8, ly2); }
+
+    // hover crosshair + tooltip
+    var tip = $("tip");
+    if(hover === null || !h[hover]){ tip.hidden = true; return; }
+    var s = h[hover], x = X(s.t);
+    g.strokeStyle = ink; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(Math.round(x) + .5, Tp); g.lineTo(Math.round(x) + .5, Tp + ph); g.stroke();
+    [[s.T, s1], [s.sp, s2]].forEach(function(pt){
+      if(pt[0] === null) return;
+      g.fillStyle = pt[1]; g.strokeStyle = css("--card"); g.lineWidth = 2;
+      g.beginPath(); g.arc(x, Y(pt[0]), 4.5, 0, 7); g.fill(); g.stroke();
+    });
+    tip.innerHTML = '<div class="t">' + mmss(s.t) + " &middot; " + s.st + "</div>" +
+      '<div><i style="border-color:var(--s1)"></i>Temperature <b>' + s.T.toFixed(1) + " &deg;C</b></div>" +
+      (s.sp === null ? "" : '<div><i style="border-color:var(--s2);border-top-style:dashed"></i>Setpoint <b>' + s.sp.toFixed(1) + " &deg;C</b></div>") +
+      '<div class="t">Heater ' + Math.round(s.p) + " %</div>";
+    tip.hidden = false;
+    var tw = tip.offsetWidth;
+    tip.style.left = (x + 12 + tw > W ? x - 12 - tw : x + 12) + "px";
+    tip.style.top = Tp + 4 + "px";
+  }
+
+  function pick(e){
+    var cv = $("chart"), r = cv.getBoundingClientRect(), h = sim.hist;
+    if(!h.length){ hover = null; return; }
+    var L = 34, pw = r.width - L - 58;
+    var tmax = Math.max(60, sim.plan, h[h.length - 1].t);
+    var t = (e.clientX - r.left - L) / pw * tmax;
+    var best = 0;
+    for(var i = 1; i < h.length; i++) if(Math.abs(h[i].t - t) < Math.abs(h[best].t - t)) best = i;
+    hover = best;
+    drawChart();
+  }
+  $("plot").addEventListener("pointermove", pick);
+  $("plot").addEventListener("pointerdown", pick);
+  $("plot").addEventListener("pointerleave", function(){ hover = null; drawChart(); });
+
+  /* ---------- 6. Main loop ---------- */
+  var timer = null, lastTick = 0;
+  function tick(){
+    var now = Date.now();
+    var secs = Math.min((now - lastTick) / 1000, 1) * speed;
+    lastTick = now;
+    while(secs > 0){ var dt = Math.min(0.5, secs); step(dt); secs -= dt; }
+    drawLcd(); renderTiles(); drawChart();
+  }
+
+  function mmss(s){
+    s = Math.max(0, Math.ceil(s - 1e-6));
+    var m = Math.floor(s / 60), r = s % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r;
+  }
+
+  renderParams();
+  return {
+    start: function(){
+      if(timer) return;
+      lastTick = Date.now();
+      timer = setInterval(tick, 200);
+      tick();
+    },
+    stop: function(){ clearInterval(timer); timer = null; holdStop(); }
+  };
+})();
 </script>
 </body>
 </html>

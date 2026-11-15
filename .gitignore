@@ -11,3 +11,6 @@ build/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Local documentation (not published)
+docs/

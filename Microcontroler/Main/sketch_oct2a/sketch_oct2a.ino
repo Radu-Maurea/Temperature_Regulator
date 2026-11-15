@@ -3,9 +3,11 @@
 #include "src/Drivers/WebDriver/WebDriver.h"
 #include "src/Drivers/RtcDriver/Rtc.h"
 #include "src/Drivers/DigitalTempDriver/DigitalTempDriver.h"
+#include "src/Drivers/HeaterDriver/HeaterDriver.h"
 
 void setup() {
   Serial.begin(9600);
+  Heater_Init();       // first, so the bulb is off while everything else starts
 
   // Display first, so the screen is not dark while WiFi connects (up to 20 s).
   Disp_Init();
@@ -30,6 +32,10 @@ void loop() {
 
   Wifi_Task();
   Web_Task();
+
+  // Bulb power chosen on the phone (0/25/50/100 %)
+  Heater_SetDuty(Web_GetDuty());
+  Heater_Task();
 
   // Redraw only once a second
   char time[9];

@@ -13,7 +13,8 @@
 
 static WiFiServer server(WEB_PORT);
 static float target = 22.0f;
-static float temp = NAN;   // NAN until the first reading arrives
+static float temp = NAN;     // NAN until the first reading arrives
+static uint8_t duty = 0;     // bulb power in percent
 
 // Reads one line ("GET /status HTTP/1.1") into line, without the \r\n.
 // Returns false if the client went quiet or disconnected first.
@@ -78,13 +79,12 @@ static void printTenths(char *buf, int len, float v)
 
 static void sendStatus(WiFiClient &client)
 {
-  // No heater yet, so power is 0.
   char t[12], tg[12];
   printTenths(t, sizeof(t), temp);
   printTenths(tg, sizeof(tg), target);
   char body[80];
   snprintf(body, sizeof(body),
-           "{\"temp\":%s,\"target\":%s,\"power\":0,\"fault\":null}", t, tg);
+           "{\"temp\":%s,\"target\":%s,\"power\":%u,\"fault\":null}", t, tg, duty);
   sendHeader(client, "200 OK", "application/json");
   client.write((const uint8_t *)body, strlen(body));
 }
@@ -103,6 +103,19 @@ static void setTarget(const char *path)
   }
   v = constrain(v, TARGET_MIN, TARGET_MAX);
   target = roundf(v * 2.0f) / 2.0f;   // the page works in 0.5 degree steps
+}
+
+// path looks like "/pwm?duty=50". Only the levels the page offers are accepted.
+static void setDuty(const char *path)
+{
+  const char *arg = strstr(path, "duty=");
+  if (arg == NULL) {
+    return;
+  }
+  int v = atoi(arg + 5);
+  if (v == 0 || v == 25 || v == 50 || v == 100) {
+    duty = (uint8_t)v;
+  }
 }
 
 void Web_Init(void)
@@ -148,6 +161,9 @@ void Web_Task(void)
   } else if (strncmp(path, "/set?", 5) == 0) {
     setTarget(path);
     sendStatus(client);
+  } else if (strncmp(path, "/pwm?", 5) == 0) {
+    setDuty(path);
+    sendStatus(client);
   } else {
     sendHeader(client, "404 Not Found", "text/plain");
   }
@@ -164,4 +180,9 @@ float Web_GetTarget(void)
 void Web_SetTemp(float t)
 {
   temp = t;
+}
+
+uint8_t Web_GetDuty(void)
+{
+  return duty;
 }
