@@ -48,5 +48,6 @@ void loop() {
     lastRead = millis();
     float temp = DigitalTemp_Read();
     Disp_ShowCurrent(temp);
+    Web_SetTemp(temp);
   }
 }

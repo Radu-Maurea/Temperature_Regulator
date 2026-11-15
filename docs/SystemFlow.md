@@ -2,8 +2,8 @@
 
 How the temperature regulator firmware and the web page work together today.
 
-> **Current scope:** WiFi, web page and display are implemented. There is **no temperature sensor or heater yet**,
-> so the firmware always reports `temp: null` (the page shows `--`) and `power: 0`.
+> **Current scope:** WiFi, web page, display and the DS18B20 sensor are implemented. There is **no heater yet**,
+> so the firmware always reports `power: 0`. `temp` is the DS18B20 reading, or `null` (the page shows `--`) if the sensor fails.
 
 ## 1. Big picture
 
