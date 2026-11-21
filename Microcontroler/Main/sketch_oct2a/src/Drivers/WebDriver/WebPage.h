@@ -26,7 +26,7 @@ header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 h1{font-size:1.05rem;margin:0;font-weight:600}
 #mock{margin-left:auto;font:600 .7rem/1 system-ui;letter-spacing:.08em;padding:7px 10px;border-radius:999px;border:1px solid var(--warn);color:var(--warn);background:none}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
-#banner{border-radius:14px;padding:12px 14px;margin-bottom:12px;font-weight:600;border:1px solid var(--bad);color:var(--bad)}
+#banner,#nbanner{border-radius:14px;padding:12px 14px;margin-bottom:12px;font-weight:600;border:1px solid var(--bad);color:var(--bad)}
 .big{font-size:3.6rem;font-weight:700;line-height:1;text-align:center;font-variant-numeric:tabular-nums}
 .big .u{font-size:1.4rem;font-weight:500;color:var(--dim)}
 #rel{text-align:center;margin-top:8px;font-weight:600}
@@ -93,20 +93,21 @@ input[type=range]{width:100%;height:40px;margin:18px 0 0;accent-color:var(--acce
 .prow input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
 .prow input[aria-invalid=true]{border-color:var(--bad)}
 .prow input.saved{border-color:var(--ok)}
+.prow input:disabled{opacity:.5}
 .unit{color:var(--dim);font-size:.85rem}
 #pstatus{min-height:1.3em;font-size:.85rem;margin:10px 0 0}
 #pstatus.err{color:var(--bad)} #pstatus.ok{color:var(--ok)}
 .note{font-size:.8rem;color:var(--dim);margin:12px 0 0}
 .linkbtn{font-size:.8rem;padding:8px 12px;margin-top:10px;color:var(--dim)}
+.linkbtn:disabled{opacity:.5}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .tile{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .tile .lbl{margin-bottom:2px}
 .tile b{font-size:1.15rem;font-variant-numeric:tabular-nums}
+#runBtn{margin:0 0 16px}
+.go.stop:not(:disabled){background:var(--bad);border-color:var(--bad)}
 .chead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .chead h2{font-size:.95rem;margin:0;font-weight:600}
-.seg{margin-left:auto;display:flex;gap:4px}
-.seg button{padding:6px 10px;font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums}
-.seg button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
 .legend{display:flex;gap:16px;font-size:.8rem;color:var(--dim);margin-bottom:6px}
 .legend i{display:inline-block;width:16px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
 .plot{position:relative}
@@ -127,7 +128,7 @@ input[type=range]{width:100%;height:40px;margin:18px 0 0;accent-color:var(--acce
   <div class="choices">
     <button class="choice" id="pickNormal">
       <b>Normal</b>
-      <span>16&times;2 LCD menu with OK / Cancel / + / &minus; and a temperature graph. Front-end only &mdash; simulated, not connected to the board.</span>
+      <span>16&times;2 LCD menu with OK / Cancel / + / &minus; and a temperature graph. Runs the PID heat &rarr; hold &rarr; cool cycle on the board.</span>
     </button>
     <button class="choice" id="pickDebug">
       <b>Debug</b>
@@ -191,13 +192,15 @@ input[type=range]{width:100%;height:40px;margin:18px 0 0;accent-color:var(--acce
 <p class="hint" id="hint">Range 20&ndash;50 &deg;C, 0.5 &deg;C steps</p>
 </div>
 
-<!-- ===== Normal interface (front-end only, simulated) ===== -->
+<!-- ===== Normal interface (runs the cycle on the board) ===== -->
 <div class="nwrap" id="normalView" hidden>
 <header>
   <button class="back" data-back aria-label="Back to mode selection">&lsaquo; Mode</button>
   <h1>Temperature Regulator</h1>
-  <span id="sim" title="Front-end only: the regulator is simulated in the browser">SIMULATION</span>
+  <span id="sim" hidden title="The board is simulated in the browser">MOCK</span>
 </header>
+
+<div id="nbanner" role="alert" hidden></div>
 
 <div class="ngrid">
     <div class="card">
@@ -217,31 +220,30 @@ input[type=range]{width:100%;height:40px;margin:18px 0 0;accent-color:var(--acce
       <span class="lbl">Parameters</span>
       <div class="params" id="params"></div>
       <p id="pstatus" aria-live="polite"></p>
-      <p class="note">Type a value and press Enter (or tap outside the box) to save. Times: <b>mm:ss</b> or minutes (5.5 = 05:30). You can also change them from the LCD menu. Values are stored in this browser in place of the board's non-volatile memory, so they survive a page reload.</p>
+      <p class="note">Type a value and press Enter (or tap outside the box) to send it to the board. Times are in seconds. TSET and the times are locked while a cycle runs; KP, KI and KD can be changed at any time. You can also change them from the LCD menu. The board keeps them until it is reset.</p>
       <button class="linkbtn" id="resetDef">Reset to defaults</button>
     </div>
 
   <div class="card">
     <div class="chead">
-      <h2>Temperature over time</h2>
-      <div class="seg" id="speed" aria-label="Simulation speed">
-        <button data-s="1" aria-pressed="false">1&times;</button>
-        <button data-s="10" aria-pressed="true">10&times;</button>
-        <button data-s="60" aria-pressed="false">60&times;</button>
-      </div>
+      <h2>Cycle</h2>
     </div>
-    <div class="tiles">
-      <div class="tile"><span class="lbl">Stage</span><b id="tStage">Stopped</b></div>
+    <div class="tiles" id="ntiles">
+      <div class="tile"><span class="lbl">Phase</span><b id="tStage">--</b></div>
+      <div class="tile"><span class="lbl">Setpoint</span><b id="tSp">--</b></div>
+      <div class="tile"><span class="lbl">Temperature</span><b id="tTemp">--</b></div>
+      <div class="tile"><span class="lbl">Heater PWM</span><b id="tPow">--</b></div>
+      <div class="tile"><span class="lbl">Elapsed</span><b id="tEl">--:--</b></div>
       <div class="tile"><span class="lbl">Remaining</span><b id="tRem">--:--</b></div>
-      <div class="tile"><span class="lbl">Heater</span><b id="tPow">0 %</b></div>
     </div>
+    <button class="go" id="runBtn" disabled>Start cycle</button>
     <div class="legend">
       <span><i style="border-color:var(--s1)"></i>Temperature</span>
       <span><i style="border-color:var(--s2);border-top-style:dashed"></i>Setpoint (profile)</span>
     </div>
     <div class="plot" id="plot">
       <canvas id="chart" aria-label="Temperature and setpoint over time"></canvas>
-      <div id="empty">Start the process from the LCD: OK &rarr; &ldquo;Start ciclu&rdquo; &rarr; OK.</div>
+      <div id="empty">Press &ldquo;Start cycle&rdquo;, or from the LCD: OK &rarr; &ldquo;Start ciclu&rdquo; &rarr; OK.</div>
       <div id="tip" hidden></div>
     </div>
     <button class="linkbtn" id="csv">Download data (CSV)</button>
@@ -271,7 +273,27 @@ function realCall(path){
 }
 
 /* --- mock backend: simulates the regulator so the UI can be tested --- */
-var sim = {temp:ROOM, target:22, duty:0, power:0, fault:null, t:Date.now()};
+var sim = {temp:ROOM, target:22, duty:0, power:0, fault:null, t:Date.now(),
+           phase:"idle", T0:ROOM, start:0, sp:null, integ:0, prevT:ROOM, out:0,
+           p:{tset:50, tinc:60, tmen:20, trac:50, kp:8, ki:0.05, kd:20}};
+var RUNNING = ["inc", "men", "rac"];
+
+// Same as the board's PidDriver: trapezoid profile + PID, output 0..100 %.
+function mockCycle(dt){
+  var p = sim.p, t = (Date.now() - sim.start) / 1000;
+  if(sim.fault === "sensor"){ sim.phase = "err"; return; }
+  if(t < p.tinc){ sim.phase = "inc"; sim.sp = sim.T0 + (p.tset - sim.T0) * t / p.tinc; }
+  else if(t < p.tinc + p.tmen){ sim.phase = "men"; sim.sp = p.tset; }
+  else if(t < p.tinc + p.tmen + p.trac){ sim.phase = "rac"; sim.sp = p.tset - (p.tset - sim.T0) * (t - p.tinc - p.tmen) / p.trac; }
+  else { sim.phase = "done"; return; }
+  if(dt <= 0) return;
+  var e = sim.sp - sim.temp;
+  sim.integ = Math.max(0, Math.min(100, sim.integ + p.ki * e * dt));
+  var out = p.kp * e + sim.integ - p.kd * (sim.temp - sim.prevT) / dt;
+  sim.prevT = sim.temp;
+  sim.out = Math.round(Math.max(0, Math.min(100, out)));
+}
+
 function mockCall(path){
   var now = Date.now();
   var dt = Math.min((now - sim.t) / 1000, 5);   // seconds since last step
@@ -282,19 +304,39 @@ function mockCall(path){
   m = /duty=(\d+)/.exec(path);
   if(m && [0, 25, 50, 100].indexOf(+m[1]) >= 0) sim.duty = +m[1];
 
-  // Bulb power is set by hand from the page, like the real firmware.
+  var running = RUNNING.indexOf(sim.phase) >= 0;
+  if(path.indexOf("/params?") === 0){
+    Object.keys(sim.p).forEach(function(k){
+      var v = new RegExp("[?&]" + k + "=([\\d.]+)").exec(path);
+      if(v && (!running || /^k/.test(k))) sim.p[k] = parseFloat(v[1]);   // only the gains change during a cycle
+    });
+  }
+  if(path === "/start" && !running){
+    sim.phase = "inc"; sim.start = now; sim.T0 = sim.prevT = sim.temp;
+    sim.integ = 0; sim.out = 0; sim.duty = 0;
+  }
+  if(path === "/stop") sim.phase = "idle";
+  if(RUNNING.indexOf(sim.phase) >= 0) mockCycle(dt);
+  running = RUNNING.indexOf(sim.phase) >= 0;
+  if(!running){ sim.sp = null; sim.out = 0; }
+
+  // Bulb power is set by the PID or by hand from the page, like the real firmware.
   // Any fault cuts the bulb.
   sim.power = sim.fault ? 0 : sim.duty;
+  var heat = sim.fault ? 0 : running ? sim.out : sim.duty;
   // Bulb heats; the room always pulls the sensor back toward ambient.
-  sim.temp += (sim.power / 100) * 0.9 * dt;
+  sim.temp += (heat / 100) * 0.9 * dt;
   sim.temp -= (sim.temp - ROOM) * 0.02 * dt;
 
-  var body = {
-    temp: sim.fault === "sensor" ? null : Math.round(sim.temp * 10) / 10,
-    target: sim.target,
-    power: sim.power,
-    fault: sim.fault
-  };
+  var temp = sim.fault === "sensor" ? null : Math.round(sim.temp * 10) / 10;
+  var body;
+  if(/^\/(run|params|start|stop)/.test(path)){
+    body = {phase:sim.phase, sp:sim.sp === null ? null : Math.round(sim.sp * 10) / 10, temp:temp,
+            power:sim.out, elapsed:running ? Math.floor((now - sim.start) / 1000) : 0};
+    Object.keys(sim.p).forEach(function(k){ body[k] = sim.p[k]; });
+  }else{
+    body = {temp:temp, target:sim.target, power:sim.power, fault:sim.fault};
+  }
   // Fake a little latency, and a dead backend while faking "offline".
   return new Promise(function(res, rej){
     setTimeout(function(){
@@ -321,7 +363,14 @@ function call(path, wait){
 var api = {
   status: function(){ return call("/status", false); },
   setTarget: function(v){ return call("/set?target=" + v.toFixed(1), true); },
-  setDuty: function(d){ return call("/pwm?duty=" + d, true); }
+  setDuty: function(d){ return call("/pwm?duty=" + d, true); },
+  run: function(wait){ return call("/run", !!wait); },
+  setParams: function(p){
+    return call("/params?tset=" + p.tset.toFixed(1) + "&tinc=" + p.tinc + "&tmen=" + p.tmen + "&trac=" + p.trac +
+                "&kp=" + p.kp.toFixed(1) + "&ki=" + p.ki.toFixed(2) + "&kd=" + p.kd.toFixed(1), true);
+  },
+  start: function(){ return call("/start", true); },
+  stop: function(){ return call("/stop", true); }
 };
 
 /* === 2. STATE + RENDERING === */
@@ -484,122 +533,110 @@ $("pickNormal").onclick = function(){ showMode("normal"); };
 <script>
 "use strict";
 /* ================= NORMAL INTERFACE =================
-   Front-end only. The regulator (heater, sensor, PID and the
-   heat -> hold -> cool profile) is simulated in the browser, so the
-   LCD menu and the graph can be designed before the firmware has them.
-   Nothing here talks to the board. */
+   The regulator (PID and the heat -> hold -> cool profile) runs on the board.
+   This page talks to it through /run, /params, /start and /stop. */
 var Normal = (function(){
   var $ = function(id){ return document.getElementById(id); };
 
-  /* ---------- 1. Parameters (non-volatile: browser storage stands in for EEPROM) ---------- */
-  var KEY = "tr.params.v1";
-  var DEF = {tset:45, tinc:300, tmen:600, trac:300, kp:8, ki:0.05, kd:20};
+  /* ---------- 1. Parameters (kept on the board) ---------- */
+  var DEF = {tset:50, tinc:60, tmen:20, trac:50, kp:8, ki:0.05, kd:20};
   var DEFS = {   // menu order, limits, step and how the value is shown on the LCD
     tset: {name:"TSET",        min:20, max:50,   step:0.5,  fmt:function(v){ return v.toFixed(1) + "°C"; }},
-    tinc: {name:"t incalzire", min:0,  max:5990, step:10,   fmt:mmss},
-    tmen: {name:"t mentinere", min:0,  max:5990, step:10,   fmt:mmss},
-    trac: {name:"t racire",    min:0,  max:5990, step:10,   fmt:mmss},
+    tinc: {name:"t incalzire", min:0,  max:5999, step:1,    fmt:secs},
+    tmen: {name:"t mentinere", min:0,  max:5999, step:1,    fmt:secs},
+    trac: {name:"t racire",    min:0,  max:5999, step:1,    fmt:secs},
     kp:   {name:"KP",          min:0,  max:99.9, step:0.1,  fmt:function(v){ return v.toFixed(1); }},
     ki:   {name:"KI",          min:0,  max:9.99, step:0.01, fmt:function(v){ return v.toFixed(2); }},
     kd:   {name:"KD",          min:0,  max:99.9, step:0.1,  fmt:function(v){ return v.toFixed(1); }}
   };
   var ORDER = ["tset", "tinc", "tmen", "trac", "kp", "ki", "kd"];
+  var PROFILE = ["tset", "tinc", "tmen", "trac"];   // locked while a cycle runs
 
   function clampParam(k, v){
     var d = DEFS[k];
     v = Math.round(v / d.step) * d.step;
     return +Math.max(d.min, Math.min(d.max, v)).toFixed(2);
   }
-  function load(){
+  function copy(src){
     var p = {};
-    var saved = null;
-    try{ saved = JSON.parse(localStorage.getItem(KEY)); }catch(e){}
-    ORDER.forEach(function(k){
-      var v = saved && typeof saved[k] === "number" && isFinite(saved[k]) ? saved[k] : DEF[k];
-      p[k] = clampParam(k, v);
-    });
+    ORDER.forEach(function(k){ p[k] = src[k]; });
     return p;
   }
-  function save(){
-    try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){}
-    renderParams();
-  }
-  var P = load();
+  var P = copy(DEF);        // replaced by the board's values on the first /run
+  var loaded = false;       // P holds the board's values
 
-  /* ---------- 2. Simulated regulator ---------- */
-  var AMB = 22;                 // room temperature, degrees C
-  var HEAT = 0.5;               // degrees C per second at 100 % heater
-  var LOSS = 0.01;              // heat loss toward the room, per second
+  /* ---------- 2. Regulator state (from the board) ---------- */
   var STAGES = [
-    {k:"inc", lcd:"INCALZIRE", label:"Heating", dur:function(){ return P.tinc; }},
-    {k:"men", lcd:"MENTINERE", label:"Holding", dur:function(){ return P.tmen; }},
-    {k:"rac", lcd:"RACIRE",    label:"Cooling", dur:function(){ return P.trac; }}
+    {k:"inc", lcd:"INCALZIRE", label:"Heating", dur:"tinc"},
+    {k:"men", lcd:"MENTINERE", label:"Holding", dur:"tmen"},
+    {k:"rac", lcd:"RACIRE",    label:"Cooling", dur:"trac"}
   ];
-  var sim = {
-    T: AMB, power: 0, state: "idle",   // idle | run | done
-    stage: 0, el: 0, runT: 0, startT: AMB,
-    integ: 0, prevT: AMB, plan: 0,
-    hist: [], bounds: [], lastSample: -1e9
-  };
-  var speed = 10;
+  var run = null;           // last good /run payload
+  var fails = 0;            // consecutive failed requests
+  var sending = false;      // a start / stop / params request is in flight
+  var hist = [], bounds = [], plan = 0, wasRunning = false;
 
-  function setpoint(){
-    if(sim.state !== "run") return null;
-    var s = STAGES[sim.stage], d = s.dur(), f = d > 0 ? Math.min(1, sim.el / d) : 1;
-    if(s.k === "inc") return sim.startT + (P.tset - sim.startT) * f;
-    if(s.k === "men") return P.tset;
-    return P.tset + (AMB - P.tset) * f;
+  // Current stage, or null when no cycle runs.
+  function stage(){
+    for(var i = 0; i < STAGES.length; i++) if(run && STAGES[i].k === run.phase) return STAGES[i];
+    return null;
   }
-  function measured(){ return Math.round(sim.T * 16) / 16; }   // DS18B20: 1/16 degree steps
   function remaining(){
-    return sim.state === "run" ? Math.max(0, STAGES[sim.stage].dur() - sim.el) : 0;
+    var s = stage(), end = 0;
+    if(!s) return 0;
+    for(var i = 0; i <= STAGES.indexOf(s); i++) end += P[STAGES[i].dur];
+    return Math.max(0, end - run.elapsed);
   }
 
-  function startRun(){
-    sim.state = "run"; sim.stage = 0; sim.el = 0; sim.runT = 0;
-    sim.startT = sim.T; sim.integ = 0; sim.prevT = sim.T;
-    sim.hist = []; sim.lastSample = -1e9;
-    sim.bounds = [{t:0, label:STAGES[0].lcd}];
-    sim.plan = P.tinc + P.tmen + P.trac;
-    skipEmpty();
-  }
-  function stopRun(){ sim.state = "idle"; sim.power = 0; }
-
-  // Moves on past finished (or zero-length) stages.
-  function skipEmpty(){
-    while(sim.state === "run" && sim.el >= STAGES[sim.stage].dur()){
-      sim.el -= STAGES[sim.stage].dur();
-      sim.stage++;
-      if(sim.stage >= STAGES.length){ sim.state = "done"; sim.power = 0; return; }
-      sim.bounds.push({t:sim.runT - sim.el, label:STAGES[sim.stage].lcd});
-    }
+  // The graph starts over with each cycle; the profile cannot change while it runs.
+  function newCycle(){
+    hist = []; bounds = []; plan = 0;
+    STAGES.forEach(function(s){
+      if(P[s.dur] > 0) bounds.push({t:plan, label:s.lcd});
+      plan += P[s.dur];
+    });
   }
 
-  function step(dt){
-    if(sim.state === "run"){
-      sim.el += dt; sim.runT += dt;
-      skipEmpty();
+  function apply(r){
+    if(!r) return;               // request was skipped (busy)
+    run = r;
+    fails = 0;
+    ORDER.forEach(function(k){ P[k] = r[k]; });
+    loaded = true;
+    var s = stage(), prev = hist[hist.length - 1];
+    if(s && (!wasRunning || (prev && r.elapsed < prev.t))) newCycle();
+    prev = hist[hist.length - 1];
+    if(s && r.temp !== null && (!prev || r.elapsed > prev.t) && hist.length < 20000){
+      hist.push({t:r.elapsed, T:r.temp, sp:r.sp, p:r.power, st:s.label});
     }
-    var sp = setpoint();
-    if(sp !== null){
-      // PID: derivative on the measurement (no kick when the setpoint moves),
-      // integral clamped so it alone never asks for more than 0..100 %.
-      var T = measured(), e = sp - T;
-      sim.integ += e * dt;
-      if(P.ki > 0) sim.integ = Math.max(0, Math.min(100 / P.ki, sim.integ));
-      var deriv = -(T - sim.prevT) / dt;
-      sim.prevT = T;
-      sim.power = Math.max(0, Math.min(100, P.kp * e + P.ki * sim.integ + P.kd * deriv));
-    }else{
-      sim.power = 0;
-    }
-    sim.T += (sim.power / 100 * HEAT - (sim.T - AMB) * LOSS) * dt;
+    wasRunning = !!s;
+    renderParams(); renderRun(); drawChart();
+  }
+  function failed(){
+    fails++;
+    renderRun();                 // recovers automatically on the next success
+  }
+  function poll(){ api.run(false).then(apply, failed); }
 
-    if((sim.state === "run" || sim.state === "done") && sim.runT - sim.lastSample >= 2 && sim.hist.length < 5000){
-      sim.lastSample = sim.runT;
-      sim.hist.push({t:sim.runT, T:measured(), sp:sp, p:sim.power,
-                     st: sim.state === "run" ? STAGES[sim.stage].label : "Done"});
-    }
+  // Sends all parameters; the board answers with the values it kept.
+  function sendParams(){
+    sending = true;
+    renderRun();
+    return api.setParams(P).then(function(r){ apply(r); return true; },
+                                 function(){ failed(); return false; })
+      .then(function(ok){ sending = false; renderRun(); return ok; });
+  }
+
+  function toggleRun(){
+    if(sending || !loaded) return;
+    var on = !!stage();
+    sending = true;
+    renderRun();
+    // The board acts on start / stop after answering, so ask again for the new state.
+    (on ? api.stop() : api.start())
+      .then(function(){ return api.run(true); })
+      .then(apply, failed)
+      .then(function(){ sending = false; renderRun(); });
   }
 
   /* ---------- 3. LCD 16x2 + menu ---------- */
@@ -634,10 +671,16 @@ var Normal = (function(){
     if(ui.screen === "msg"){ lcd(center(ui.msg[0]), center(ui.msg[1])); return; }
 
     if(ui.screen === "home"){
-      var l1 = "S:" + P.tset.toFixed(1) + "° C:" + measured().toFixed(1) + "°";
+      var s = stage();
+      var sp = s && run.sp !== null ? run.sp : P.tset;
+      var cur = run && run.temp !== null ? run.temp.toFixed(1) : "--.-";
+      var l1 = "S:" + sp.toFixed(1) + "° C:" + cur + "°";
       var l2;
-      if(sim.state === "run") l2 = right(STAGES[sim.stage].lcd, mmss(remaining()));
-      else if(sim.state === "done") l2 = right("GATA", "OK=MENIU");
+      if(fails >= 2) l2 = "FARA CONEXIUNE";
+      else if(!loaded) l2 = "CONECTARE...";
+      else if(s) l2 = right(s.lcd, mmss(remaining()));
+      else if(run.phase === "done") l2 = right("GATA", "OK=MENIU");
+      else if(run.phase === "err") l2 = right("EROARE", "OK=MENIU");
       else l2 = right("OPRIT", "OK=MENIU");
       lcd(l1, l2);
       return;
@@ -645,7 +688,7 @@ var Normal = (function(){
     if(ui.screen === "menu"){
       var n = (ui.idx + 1) + "/" + MENU_N;
       if(ui.idx === 0){
-        var running = sim.state === "run";
+        var running = !!stage();
         lcd(right(">" + (running ? "Stop ciclu" : "Start ciclu"), n),
             running ? "  OK = opreste" : "  OK = porneste");
       }else{
@@ -674,20 +717,25 @@ var Normal = (function(){
       if(key === "minus") ui.idx = (ui.idx + MENU_N - 1) % MENU_N;
       if(key === "cancel") ui.screen = "home";
       if(key === "ok"){
-        if(ui.idx === 0){
-          if(sim.state === "run"){ stopRun(); message("Ciclu", "oprit", "home"); }
-          else { startRun(); message("Ciclu", "pornit", "home"); }
-        }else{
-          ui.val = P[ORDER[ui.idx - 1]];
-          ui.screen = "edit";
+        var k = ORDER[ui.idx - 1];
+        if(!loaded) message("Fara", "conexiune", "menu");
+        else if(ui.idx === 0){
+          message("Ciclu", stage() ? "oprit" : "pornit", "home");
+          toggleRun();
         }
+        else if(stage() && PROFILE.indexOf(k) >= 0) message("Blocat", "ciclu pornit", "menu");
+        else { ui.val = P[k]; ui.screen = "edit"; }
       }
     }else if(ui.screen === "edit"){
-      var k = ORDER[ui.idx - 1], d = DEFS[k];
+      var ek = ORDER[ui.idx - 1], d = DEFS[ek];
       var mult = fast ? 10 : 1;
-      if(key === "plus")  ui.val = clampParam(k, ui.val + d.step * mult);
-      if(key === "minus") ui.val = clampParam(k, ui.val - d.step * mult);
-      if(key === "ok"){ P[k] = ui.val; save(); message("Salvat", d.name, "menu"); }
+      if(key === "plus")  ui.val = clampParam(ek, ui.val + d.step * mult);
+      if(key === "minus") ui.val = clampParam(ek, ui.val - d.step * mult);
+      if(key === "ok"){
+        P[ek] = ui.val;
+        message("Salvat", d.name, "menu");
+        sendParams().then(function(ok){ if(!ok) message("Nesalvat", "fara conexiune", "menu"); });
+      }
       if(key === "cancel") message("Anulat", d.name, "menu");
     }
     drawLcd();
@@ -733,27 +781,21 @@ var Normal = (function(){
 
   /* ---------- 4. Parameter list + controls ---------- */
   // One text box per parameter. Typed values are checked, limited to the
-  // allowed range, rounded to the step and saved like the LCD menu does.
+  // allowed range, rounded to the step and sent to the board.
   var INPUT = {
-    tset: {unit:"°C", hint:"20 – 50, step 0.5",         show:function(v){ return v.toFixed(1); }},
-    tinc: {unit:"min",     hint:"00:00 – 99:50, step 10 s", show:mmss, time:true},
-    tmen: {unit:"min",     hint:"00:00 – 99:50, step 10 s", show:mmss, time:true},
-    trac: {unit:"min",     hint:"00:00 – 99:50, step 10 s", show:mmss, time:true},
-    kp:   {unit:"",        hint:"0 – 99.9",                  show:function(v){ return v.toFixed(1); }},
-    ki:   {unit:"",        hint:"0 – 9.99",                  show:function(v){ return v.toFixed(2); }},
-    kd:   {unit:"",        hint:"0 – 99.9",                  show:function(v){ return v.toFixed(1); }}
+    tset: {unit:"°C", hint:"20 – 50, step 0.5", show:function(v){ return v.toFixed(1); }},
+    tinc: {unit:"s",  hint:"0 – 5999, step 1",  show:String},
+    tmen: {unit:"s",  hint:"0 – 5999, step 1",  show:String},
+    trac: {unit:"s",  hint:"0 – 5999, step 1",  show:String},
+    kp:   {unit:"",   hint:"0 – 99.9",          show:function(v){ return v.toFixed(1); }},
+    ki:   {unit:"",   hint:"0 – 9.99",          show:function(v){ return v.toFixed(2); }},
+    kd:   {unit:"",   hint:"0 – 99.9",          show:function(v){ return v.toFixed(1); }}
   };
   var boxes = {};
 
-  // "45,5" / "45.5" -> 45.5;  times: "5:30" -> 330 s, "5.5" -> 330 s. NaN if not valid.
-  function parseInput(k, s){
+  // "45,5" / "45.5" -> 45.5. NaN if not valid.
+  function parseInput(s){
     s = s.trim().replace(",", ".");
-    var m;
-    if(INPUT[k].time){
-      if((m = /^(\d{1,2}):(\d{1,2})$/.exec(s)) && +m[2] < 60) return +m[1] * 60 + +m[2];
-      if(/^\d+(\.\d+)?$/.test(s)) return parseFloat(s) * 60;
-      return NaN;
-    }
     return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
   }
 
@@ -764,21 +806,27 @@ var Normal = (function(){
 
   function commit(k){
     var box = boxes[k], d = DEFS[k];
-    var v = parseInput(k, box.value);
+    var v = parseInput(box.value);
     if(isNaN(v)){
       box.setAttribute("aria-invalid", "true");
-      status(d.name + ": " + (INPUT[k].time ? "write a time like 05:30 or 5.5" : "write a number like " + INPUT[k].show(DEF[k])), "err");
+      status(d.name + ": write a number like " + INPUT[k].show(DEF[k]), "err");
+      return false;
+    }
+    if(stage() && PROFILE.indexOf(k) >= 0){
+      status(d.name + ": locked while a cycle runs", "err");
       return false;
     }
     var c = clampParam(k, v);
     box.setAttribute("aria-invalid", "false");
-    P[k] = c;
-    save();
     box.value = INPUT[k].show(c);
+    P[k] = c;
     var note = Math.abs(c - v) > 1e-9 && (v < d.min || v > d.max) ? " (limited to the allowed range)" : "";
-    status("Saved " + d.name + " = " + INPUT[k].show(c) + (INPUT[k].unit ? " " + INPUT[k].unit : "") + note, "ok");
-    box.classList.add("saved");
-    setTimeout(function(){ box.classList.remove("saved"); }, 900);
+    sendParams().then(function(ok){
+      if(!ok){ status(d.name + ": not saved, no connection to the board", "err"); return; }
+      status("Saved " + d.name + " = " + INPUT[k].show(P[k]) + (INPUT[k].unit ? " " + INPUT[k].unit : "") + note, "ok");
+      box.classList.add("saved");
+      setTimeout(function(){ box.classList.remove("saved"); }, 900);
+    });
     drawLcd();
     return true;
   }
@@ -800,12 +848,11 @@ var Normal = (function(){
       if(!commit(k)){
         box.value = INPUT[k].show(P[k]);
         box.setAttribute("aria-invalid", "false");
-        status(DEFS[k].name + ": not a valid value, kept " + box.value, "err");
       }
     });
   });
 
-  // Puts the saved values in the boxes, except the one being typed in.
+  // Puts the board's values in the boxes, except the one being typed in.
   function renderParams(){
     ORDER.forEach(function(k){
       if(document.activeElement !== boxes[k]) boxes[k].value = INPUT[k].show(P[k]);
@@ -821,20 +868,16 @@ var Normal = (function(){
       return;
     }
     resetArmed = 0;
-    ORDER.forEach(function(k){ P[k] = DEF[k]; });
-    save();
-    status("Defaults restored", "ok");
     this.textContent = "Reset to defaults";
+    P = copy(DEF);
+    sendParams().then(function(ok){
+      status(ok ? "Defaults restored" : "Not saved, no connection to the board", ok ? "ok" : "err");
+    });
     drawLcd();
   };
-  [].forEach.call($("speed").children, function(b){
-    b.onclick = function(){
-      speed = +b.dataset.s;
-      [].forEach.call($("speed").children, function(o){ o.setAttribute("aria-pressed", o === b); });
-    };
-  });
+  $("runBtn").onclick = toggleRun;
   $("csv").onclick = function(){
-    var rows = ["t_s,temp_c,setpoint_c,heater_pct,stage"].concat(sim.hist.map(function(h){
+    var rows = ["t_s,temp_c,setpoint_c,heater_pct,stage"].concat(hist.map(function(h){
       return [h.t.toFixed(0), h.T.toFixed(2), h.sp === null ? "" : h.sp.toFixed(2), h.p.toFixed(0), h.st].join(",");
     }));
     var a = document.createElement("a");
@@ -844,15 +887,33 @@ var Normal = (function(){
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   };
 
-  function renderTiles(){
-    $("tStage").textContent = sim.state === "run" ? STAGES[sim.stage].label
-                            : sim.state === "done" ? "Done" : "Stopped";
-    $("tRem").textContent = sim.state === "run" ? mmss(remaining()) : "--:--";
-    $("tPow").textContent = Math.round(sim.power) + " %";
+  function renderRun(){
+    var s = stage(), r = run, offline = fails >= 2;
+    $("tStage").textContent = s ? s.label : !r ? "--"
+                            : r.phase === "done" ? "Done" : r.phase === "err" ? "Sensor error" : "Stopped";
+    $("tSp").textContent = s && r.sp !== null ? r.sp.toFixed(1) + " °C" : "--";
+    $("tTemp").textContent = r && r.temp !== null ? r.temp.toFixed(1) + " °C" : "--";
+    $("tPow").textContent = r ? r.power + " %" : "--";
+    $("tEl").textContent = s ? mmss(r.elapsed) : "--:--";
+    $("tRem").textContent = s ? mmss(remaining()) : "--:--";
+    $("ntiles").classList.toggle("stale", offline);
+
+    var b = $("runBtn");
+    b.disabled = sending || !loaded || offline;
+    b.textContent = sending ? "Sending…" : s ? "Stop cycle" : "Start cycle";
+    b.classList.toggle("stop", !!s);
+
+    ORDER.forEach(function(k){ boxes[k].disabled = !loaded || (!!s && PROFILE.indexOf(k) >= 0); });
+    $("resetDef").disabled = !loaded || !!s || sending;
+
+    var msg = offline ? "No connection to the regulator. Retrying…"
+            : r && r.phase === "err" ? "Sensor failure — cycle stopped, heater off." : "";
+    $("nbanner").textContent = msg;
+    $("nbanner").hidden = !msg;
   }
 
   /* ---------- 5. Chart (canvas, one axis: degrees C) ---------- */
-  var hover = null;   // index into sim.hist under the pointer
+  var hover = null;   // index into hist under the pointer
   function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 
   function drawChart(){
@@ -865,15 +926,18 @@ var Normal = (function(){
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
 
-    var h = sim.hist;
+    var h = hist;
     $("empty").hidden = h.length > 0;
     var L = 34, R = 58, Tp = 8, B = 22;
     var pw = W - L - R, ph = H - Tp - B;
 
-    var lo = AMB - 2, hi = P.tset + 3;
-    h.forEach(function(s){ lo = Math.min(lo, s.T); hi = Math.max(hi, s.T, s.sp === null ? -1e9 : s.sp); });
-    lo = Math.floor(lo / 5) * 5; hi = Math.ceil(hi / 5) * 5;
-    var tmax = Math.max(60, sim.plan, h.length ? h[h.length - 1].t : 0);
+    var lo = h.length ? 1e9 : 20, hi = P.tset + 3;
+    h.forEach(function(s){
+      lo = Math.min(lo, s.T, s.sp === null ? 1e9 : s.sp);
+      hi = Math.max(hi, s.T, s.sp === null ? -1e9 : s.sp);
+    });
+    lo = Math.floor((lo - 2) / 5) * 5; hi = Math.ceil(hi / 5) * 5;
+    var tmax = Math.max(60, plan, h.length ? h[h.length - 1].t : 0);
     var X = function(t){ return L + t / tmax * pw; };
     var Y = function(v){ return Tp + (hi - v) / (hi - lo) * ph; };
 
@@ -888,14 +952,14 @@ var Normal = (function(){
       g.strokeStyle = grid; g.beginPath(); g.moveTo(L, Y(v) + .5); g.lineTo(L + pw, Y(v) + .5); g.stroke();
       g.fillText(v + "°", L - 6, Y(v));
     }
-    // x labels in minutes
-    var mins = tmax / 60, xstep = [1, 2, 5, 10, 15, 30, 60].find(function(s){ return mins / s <= 6; }) || 120;
+    // x labels: seconds for short cycles, minutes for long ones
+    var xstep = [10, 20, 30, 60, 120, 300, 600, 900, 1800, 3600].find(function(s){ return tmax / s <= 6; }) || 7200;
     g.textAlign = "center"; g.textBaseline = "top";
-    for(var m = 0; m <= mins + 1e-6; m += xstep) g.fillText(m + " min", X(m * 60), Tp + ph + 6);
+    for(var t = 0; t <= tmax + 1e-6; t += xstep) g.fillText(xstep < 60 ? t + " s" : t / 60 + " min", X(t), Tp + ph + 6);
 
     // stage boundaries
     g.setLineDash([3, 3]); g.strokeStyle = grid; g.textAlign = "left";
-    sim.bounds.forEach(function(b){
+    bounds.forEach(function(b){
       var x = Math.round(X(b.t)) + .5;
       g.beginPath(); g.moveTo(x, Tp); g.lineTo(x, Tp + ph); g.stroke();
       g.fillText(b.label, x + 4, Tp + 2);
@@ -951,10 +1015,10 @@ var Normal = (function(){
   }
 
   function pick(e){
-    var cv = $("chart"), r = cv.getBoundingClientRect(), h = sim.hist;
+    var cv = $("chart"), r = cv.getBoundingClientRect(), h = hist;
     if(!h.length){ hover = null; return; }
     var L = 34, pw = r.width - L - 58;
-    var tmax = Math.max(60, sim.plan, h[h.length - 1].t);
+    var tmax = Math.max(60, plan, h[h.length - 1].t);
     var t = (e.clientX - r.left - L) / pw * tmax;
     var best = 0;
     for(var i = 1; i < h.length; i++) if(Math.abs(h[i].t - t) < Math.abs(h[best].t - t)) best = i;
@@ -966,30 +1030,30 @@ var Normal = (function(){
   $("plot").addEventListener("pointerleave", function(){ hover = null; drawChart(); });
 
   /* ---------- 6. Main loop ---------- */
-  var timer = null, lastTick = 0;
-  function tick(){
-    var now = Date.now();
-    var secs = Math.min((now - lastTick) / 1000, 1) * speed;
-    lastTick = now;
-    while(secs > 0){ var dt = Math.min(0.5, secs); step(dt); secs -= dt; }
-    drawLcd(); renderTiles(); drawChart();
-  }
+  var timer = null, pollTimer = null;
 
+  function secs(v){ return v + " s"; }
   function mmss(s){
     s = Math.max(0, Math.ceil(s - 1e-6));
     var m = Math.floor(s / 60), r = s % 60;
     return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r;
   }
 
+  $("sim").hidden = !MOCK;
   renderParams();
   return {
     start: function(){
       if(timer) return;
-      lastTick = Date.now();
-      timer = setInterval(tick, 200);
-      tick();
+      timer = setInterval(drawLcd, 200);       // also makes the edited value blink
+      pollTimer = setInterval(poll, 1000);
+      poll();
+      drawLcd(); renderRun(); drawChart();
     },
-    stop: function(){ clearInterval(timer); timer = null; holdStop(); }
+    stop: function(){
+      clearInterval(timer); clearInterval(pollTimer);
+      timer = pollTimer = null;
+      holdStop();
+    }
   };
 })();
 </script>

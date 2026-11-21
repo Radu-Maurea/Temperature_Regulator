@@ -21,8 +21,9 @@ Regulator de temperatură construit pe un **Arduino UNO R4 WiFi**. Placa citeșt
 1. La pornire, placa stinge becul, pornește display-ul și se conectează la hotspotul telefonului.
 2. Ia ora de pe internet (NTP) și o păstrează în ceasul intern (RTC).
 3. Pornește un server web pe portul 80. Adresa lui apare jos pe display: `Web: http://<ip>`.
-4. În bucla principală: răspunde la cererile de pe telefon, aplică puterea becului aleasă în pagină,
-   actualizează ora pe display, iar o dată pe secundă citește temperatura și o afișează pe ecran și în pagină.
+4. În bucla principală: răspunde la cererile de pe telefon, aplică puterea becului (calculată de PID în
+   timpul unui ciclu, altfel cea aleasă în Debug), actualizează ora pe display, iar o dată pe secundă citește
+   temperatura, rulează un pas al regulatorului PID și afișează temperatura pe ecran și în pagină.
 
 Regula de arhitectură: fișierul `.ino` doar apelează funcții ale driverelor și mută datele între ele.
 Driverele nu se apelează între ele (de exemplu `WebDriver` nu știe că există display-ul).
@@ -44,50 +45,67 @@ Aceasta este interfața care vorbește cu Arduino-ul:
   „No connection to the regulator. Retrying…” și pagina se reconectează singură.
 - Cererile nu se suprapun niciodată, pentru că placa servește un singur client pe rând.
 
-> Momentan nu există reglare automată: ținta doar se memorează și se afișează, iar puterea becului se alege manual.
+> Ținta din Debug doar se memorează și se afișează; reglarea automată se face din modul **Normal**.
+> Cât timp rulează un ciclu, becul e comandat de PID, iar puterea aleasă în Debug nu are efect.
 
-### Normal – interfața finală (doar în browser, simulată)
+### Normal – interfața de lucru (regulatorul PID de pe placă)
 
-Aceasta este interfața cerută în specificații. **Deocamdată nu comunică cu placa**: încălzitorul, senzorul,
-regulatorul PID și ciclul de lucru sunt simulate în browser, ca să poată fi testată înainte să existe în firmware.
+Pornește ciclul **încălzire → menținere → răcire**. Regulatorul PID și profilul rulează pe placă
+(`PidDriver`); pagina setează parametrii, pornește/oprește ciclul și afișează ce raportează placa (la ~1 s).
 
+- **Profilul de temperatură (trapez)**. La Start se reține temperatura de start `T0`, apoi:
+  - **INCALZIRE**: setpoint-ul crește liniar de la `T0` la `TSET` în `tINC` secunde;
+  - **MENTINERE**: setpoint-ul rămâne `TSET` timp de `tMEN` secunde;
+  - **RACIRE**: setpoint-ul scade liniar de la `TSET` la `T0` în `tRAC` secunde;
+  - la final PWM-ul devine 0 și ciclul se termină (`GATA`). O etapă cu durata 0 este sărită.
+- **Regulatorul PID** (o dată pe secundă, ieșirea = PWM-ul becului 0–100 %):
+  `eroare = setpoint − temperatura`, `I += Ki·eroare·dt`, `D = −(temperatura − temperatura_anterioară)/dt`,
+  `PWM = Kp·eroare + I + Kd·D`. Cu îmbunătățirile din „Improving the Beginner's PID”: timp de eșantionare fix
+  (1 s), derivata pe măsurătoare (fără salt când setpoint-ul se schimbă), Kp/Ki/Kd modificabili din mers fără
+  salturi, ieșirea limitată la 0–100 % și anti-windup (termenul I limitat la 0–100). Becul nu poate răci, deci
+  la răcire PWM-ul nu scade sub 0.
+- **Protecție**: dacă senzorul nu răspunde în timpul ciclului, becul se stinge și ciclul se oprește
+  (pagina afișează „Sensor failure”, LCD-ul `EROARE`).
+- **Start/Stop** cu butonul din pagină sau din meniul LCD. Pagina afișează faza, setpoint-ul curent,
+  temperatura, PWM-ul, timpul scurs și timpul rămas din etapă. Pe display-ul plăcii, la „Expected”
+  apare setpoint-ul curent cât rulează ciclul.
 - **LCD 16×2** desenat în pagină, cu 4 butoane: **Cancel**, **−**, **+**, **OK**
   (și de la tastatură: Enter = OK, Esc = Cancel, ↑/↓ sau +/− = modificare; ținut apăsat, `+`/`−` se repetă).
-- **În timpul rulării**, LCD-ul arată temperatura setată, temperatura curentă și timpul rămas din etapa actuală:
+  În timpul rulării arată setpoint-ul, temperatura curentă și timpul rămas din etapă:
   ```
-  S:45.0° C:44.3°
-  MENTINERE  06:00
+  S:50.0° C:49.6°
+  MENTINERE  00:15
   ```
-  Etapele sunt **INCALZIRE** (temperatura urcă în rampă până la TSET), **MENTINERE** (rămâne la TSET) și
-  **RACIRE** (coboară în rampă spre temperatura camerei). Când nu rulează, afișează `OPRIT` sau `GATA`.
+  Când nu rulează, afișează `OPRIT`, `GATA` sau `EROARE`.
 - **Meniul** (OK pentru intrare, `+`/`−` pentru navigare): `Start ciclu` / `Stop ciclu`, `TSET`,
   `t incalzire`, `t mentinere`, `t racire`, `KP`, `KI`, `KD`.
-  OK intră în editare (valoarea clipește), `+`/`−` o modifică, OK salvează („Salvat”), Cancel renunță („Anulat”).
-- **Parametri editabili din căsuțe text**, de pe telefon sau de pe PC: scrii valoarea și apeși Enter
-  (sau atingi în afara căsuței). Se acceptă virgulă sau punct (`38,5`), iar timpii se scriu `mm:ss` sau în
-  minute (`5.5` = 05:30). Valorile din afara intervalului sunt limitate automat.
+  OK intră în editare (valoarea clipește), `+`/`−` o modifică, OK trimite valoarea la placă („Salvat”),
+  Cancel renunță („Anulat”).
+- **Parametri editabili din căsuțe text**: scrii valoarea și apeși Enter (sau atingi în afara căsuței).
+  Se acceptă virgulă sau punct (`38,5`); timpii sunt în secunde. Valorile din afara intervalului sunt limitate
+  automat (și pe placă). **TSET și timpii sunt blocați cât rulează un ciclu**; KP, KI, KD se pot schimba oricând.
 
   | Parametru | Interval | Pas | Implicit |
   |---|---|---|---|
-  | TSET | 20 – 50 °C | 0,5 | 45,0 |
-  | t incalzire / t mentinere / t racire | 00:00 – 99:50 | 10 s | 05:00 / 10:00 / 05:00 |
+  | TSET | 20 – 50 °C | 0,5 | 50,0 |
+  | t incalzire / t mentinere / t racire | 0 – 5999 s | 1 s | 60 / 20 / 50 |
   | KP | 0 – 99,9 | 0,1 | 8,0 |
   | KI | 0 – 9,99 | 0,01 | 0,05 |
   | KD | 0 – 99,9 | 0,1 | 20,0 |
 
-- **Memorie nevolatilă**: parametrii se salvează în browser (în locul memoriei EEPROM a plăcii), deci
-  rămân și după reîncărcarea paginii. „Reset to defaults” readuce valorile implicite.
-- **Graficul temperaturii** (interfața de PC opțională): temperatura și profilul de consemn în timp,
-  cu granițele etapelor marcate. Treci cu mouse-ul sau degetul peste grafic ca să vezi valorile exacte.
-  Simularea poate fi accelerată (1×, 10×, 60×), iar datele pot fi descărcate ca CSV.
+- Parametrii sunt păstrați în RAM-ul plăcii: rămân la reîncărcarea paginii, dar revin la valorile implicite
+  după un reset al plăcii. „Reset to defaults” trimite valorile implicite.
+- **Graficul temperaturii**: temperatura și setpoint-ul în timp, cu granițele etapelor marcate. Treci cu
+  mouse-ul sau degetul peste grafic ca să vezi valorile exacte. Istoricul e ținut în browser (se pierde la
+  reîncărcarea paginii); datele pot fi descărcate ca CSV.
 
 ### Testare fără placă
 
-Dacă deschizi `Web APP/index.html` direct de pe disc (sau adaugi `?mock=1` la adresă), modul **Debug**
-rulează cu o placă simulată. Butonul **MOCK** din colț trece prin defecte simulate
-(senzor defect, supratemperatură, fără conexiune). Modul **Normal** e oricum simulat.
+Dacă deschizi `Web APP/index.html` direct de pe disc (sau adaugi `?mock=1` la adresă), ambele moduri
+rulează cu o placă simulată (inclusiv ciclul PID din modul **Normal**). Butonul **MOCK** din colțul modului
+Debug trece prin defecte simulate (senzor defect, supratemperatură, fără conexiune).
 
-### API HTTP (folosit de modul Debug)
+### API HTTP
 
 | Cerere | Efect | Răspuns |
 |---|---|---|
@@ -95,9 +113,16 @@ rulează cu o placă simulată. Butonul **MOCK** din colț trece prin defecte si
 | `GET /status` | – | `{"temp":23.4,"target":22.0,"power":0,"fault":null}` |
 | `GET /set?target=23.5` | setează ținta (limitată la 20–50 °C, pași de 0,5) | același JSON ca `/status` |
 | `GET /pwm?duty=50` | setează puterea becului; se acceptă doar 0, 25, 50, 100 | același JSON ca `/status` |
+| `GET /run` | – | `{"phase":"men","sp":50.0,"temp":49.6,"power":42,"elapsed":75,"tset":50.0,"tinc":60,"tmen":20,"trac":50,"kp":8.0,"ki":0.05,"kd":20.0}` |
+| `GET /params?tset=50&tinc=60&tmen=20&trac=50&kp=8&ki=0.05&kd=20` | setează parametrii ciclului (oricare dintre ei); TSET și timpii sunt ignorați cât rulează un ciclu | același JSON ca `/run` |
+| `GET /start` | pornește ciclul și pune puterea din Debug pe 0 | același JSON ca `/run` |
+| `GET /stop` | oprește ciclul (PWM 0) | același JSON ca `/run` |
 | orice altceva | – | `404 Not Found` |
 
+`/status`, `/set` și `/pwm` sunt folosite de modul Debug, iar `/run`, `/params`, `/start`, `/stop` de modul Normal.
 `temp` este `null` dacă senzorul nu răspunde. `fault` este deocamdată mereu `null`.
+`phase` este `idle`, `inc`, `men`, `rac`, `done` sau `err` (senzor defect); `sp` este `null` când nu rulează un ciclu.
+Placa aplică `/start` și `/stop` imediat după ce răspunde, așa că starea nouă apare la următorul `/run`.
 
 ## Instalarea proiectului Arduino
 
@@ -169,8 +194,9 @@ Temperature_Regulator/
     ├── sketch_oct2a.ino             programul principal – doar apelează drivere
     └── src/Drivers/
         ├── WifiDriver/              conectarea la hotspot, reconectare, adresa IP
-        ├── WebDriver/               server HTTP pe portul 80: /, /status, /set, /pwm
+        ├── WebDriver/               server HTTP pe portul 80: /, /status, /set, /pwm, /run, /params, /start, /stop
         │   └── WebPage.h            GENERAT din Web APP/index.html
+        ├── PidDriver/               regulatorul PID și profilul încălzire / menținere / răcire
         ├── DispDriver/              desenarea pe display-ul ILI9341
         ├── RtcDriver/               ora din NTP, păstrată în RTC-ul intern
         ├── DigitalTempDriver/       senzorul DS18B20 (citire fără blocare)
@@ -200,6 +226,6 @@ Becul este alimentat de la o sursă separată, prin modulul MOSFET; masa sursei 
 
 ## Ce urmează
 
-- Reglarea automată (PID) a temperaturii pe placă, cu etapele încălzire / menținere / răcire.
-- Salvarea parametrilor în memoria nevolatilă a plăcii și legarea modului **Normal** de firmware.
-- Protecții: oprirea becului la senzor defect sau la supratemperatură (pagina știe deja să le afișeze).
+- Salvarea parametrilor în memoria nevolatilă a plăcii (EEPROM).
+- Acordarea valorilor Kp, Ki, Kd pe montajul real.
+- Protecție la supratemperatură (la senzor defect în timpul ciclului becul se stinge deja).
