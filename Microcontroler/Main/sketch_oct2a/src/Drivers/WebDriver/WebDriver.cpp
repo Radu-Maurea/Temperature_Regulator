@@ -10,11 +10,25 @@
 #define CHUNK           512      // bytes per write; big writes can stall the WiFi modem
 #define TARGET_MIN      20.0f
 #define TARGET_MAX      50.0f
+#define TIME_MAX        5999.0f // seconds
+#define KP_MAX          99.9f
+#define KI_MAX          9.99f
+#define KD_MAX          99.9f
 
 static WiFiServer server(WEB_PORT);
 static float target = 22.0f;
 static float temp = NAN;     // NAN until the first reading arrives
 static uint8_t duty = 0;     // bulb power in percent
+
+static WebParams params = {50.0f, 60, 20, 50, 8.0f, 0.05f, 20.0f};
+static bool paramsNew = true;
+static uint8_t command = WEB_CMD_NONE;
+
+static const char *runPhase = "idle";
+static bool running = false;
+static float runSetpoint = NAN;
+static uint8_t runPower = 0;
+static uint32_t runElapsed = 0;
 
 // Reads one line ("GET /status HTTP/1.1") into line, without the \r\n.
 // Returns false if the client went quiet or disconnected first.
@@ -65,26 +79,46 @@ static void sendPage(WiFiClient &client)
   }
 }
 
-// Writes v with one decimal ("-3.5"), or "null" for NAN.
-// Printed as tenths so we don't depend on float support in snprintf.
-static void printTenths(char *buf, int len, float v)
+// Writes v with dec decimals ("-3.5"), or "null" for NAN.
+// Printed as integers so we don't depend on float support in snprintf.
+static void printFixed(char *buf, int len, float v, int dec)
 {
   if (isnan(v)) {
     snprintf(buf, len, "null");
     return;
   }
-  int t10 = (int)roundf(fabsf(v) * 10.0f);
-  snprintf(buf, len, "%s%d.%d", (v < 0 && t10 != 0) ? "-" : "", t10 / 10, t10 % 10);
+  int scale = (dec == 2) ? 100 : 10;
+  int n = (int)roundf(fabsf(v) * scale);
+  snprintf(buf, len, "%s%d.%0*d", (v < 0 && n != 0) ? "-" : "", n / scale, dec, n % scale);
 }
 
 static void sendStatus(WiFiClient &client)
 {
   char t[12], tg[12];
-  printTenths(t, sizeof(t), temp);
-  printTenths(tg, sizeof(tg), target);
+  printFixed(t, sizeof(t), temp, 1);
+  printFixed(tg, sizeof(tg), target, 1);
   char body[80];
   snprintf(body, sizeof(body),
            "{\"temp\":%s,\"target\":%s,\"power\":%u,\"fault\":null}", t, tg, duty);
+  sendHeader(client, "200 OK", "application/json");
+  client.write((const uint8_t *)body, strlen(body));
+}
+
+static void sendRun(WiFiClient &client)
+{
+  char t[12], sp[12], ts[12], kp[12], ki[12], kd[12];
+  printFixed(t, sizeof(t), temp, 1);
+  printFixed(sp, sizeof(sp), runSetpoint, 1);
+  printFixed(ts, sizeof(ts), params.tset, 1);
+  printFixed(kp, sizeof(kp), params.kp, 1);
+  printFixed(ki, sizeof(ki), params.ki, 2);
+  printFixed(kd, sizeof(kd), params.kd, 1);
+  char body[256];
+  snprintf(body, sizeof(body),
+           "{\"phase\":\"%s\",\"sp\":%s,\"temp\":%s,\"power\":%u,\"elapsed\":%lu,"
+           "\"tset\":%s,\"tinc\":%u,\"tmen\":%u,\"trac\":%u,\"kp\":%s,\"ki\":%s,\"kd\":%s}",
+           runPhase, sp, t, runPower, (unsigned long)runElapsed,
+           ts, params.tinc, params.tmen, params.trac, kp, ki, kd);
   sendHeader(client, "200 OK", "application/json");
   client.write((const uint8_t *)body, strlen(body));
 }
@@ -116,6 +150,47 @@ static void setDuty(const char *path)
   if (v == 0 || v == 25 || v == 50 || v == 100) {
     duty = (uint8_t)v;
   }
+}
+
+// Number after "name=" in the query; false if missing or not a number.
+static bool readArg(const char *path, const char *name, float *v)
+{
+  int n = strlen(name);
+  for (const char *q = strchr(path, '?'); q != NULL; q = strchr(q + 1, '&')) {
+    if (strncmp(q + 1, name, n) != 0 || q[1 + n] != '=') {
+      continue;
+    }
+    char *end;
+    float x = strtof(q + 2 + n, &end);
+    if (end == q + 2 + n || isnan(x)) {
+      return false;
+    }
+    *v = x;
+    return true;
+  }
+  return false;
+}
+
+// Limits v to lo..hi and rounds it to the nearest step.
+static float toStep(float v, float lo, float hi, float step)
+{
+  return roundf(constrain(v, lo, hi) / step) * step;
+}
+
+// path looks like "/params?tset=50&kp=8". TSET and the times are locked while a cycle runs.
+static void setParams(const char *path)
+{
+  float v;
+  if (!running) {
+    if (readArg(path, "tset", &v)) params.tset = toStep(v, TARGET_MIN, TARGET_MAX, 0.5f);
+    if (readArg(path, "tinc", &v)) params.tinc = (uint16_t)toStep(v, 0.0f, TIME_MAX, 1.0f);
+    if (readArg(path, "tmen", &v)) params.tmen = (uint16_t)toStep(v, 0.0f, TIME_MAX, 1.0f);
+    if (readArg(path, "trac", &v)) params.trac = (uint16_t)toStep(v, 0.0f, TIME_MAX, 1.0f);
+  }
+  if (readArg(path, "kp", &v)) params.kp = toStep(v, 0.0f, KP_MAX, 0.1f);
+  if (readArg(path, "ki", &v)) params.ki = toStep(v, 0.0f, KI_MAX, 0.01f);
+  if (readArg(path, "kd", &v)) params.kd = toStep(v, 0.0f, KD_MAX, 0.1f);
+  paramsNew = true;
 }
 
 void Web_Init(void)
@@ -164,6 +239,18 @@ void Web_Task(void)
   } else if (strncmp(path, "/pwm?", 5) == 0) {
     setDuty(path);
     sendStatus(client);
+  } else if (strcmp(path, "/run") == 0) {
+    sendRun(client);
+  } else if (strncmp(path, "/params?", 8) == 0) {
+    setParams(path);
+    sendRun(client);
+  } else if (strcmp(path, "/start") == 0) {
+    command = WEB_CMD_START;
+    duty = 0;       // bulb stays off after the cycle
+    sendRun(client);
+  } else if (strcmp(path, "/stop") == 0) {
+    command = WEB_CMD_STOP;
+    sendRun(client);
   } else {
     sendHeader(client, "404 Not Found", "text/plain");
   }
@@ -185,4 +272,28 @@ void Web_SetTemp(float t)
 uint8_t Web_GetDuty(void)
 {
   return duty;
+}
+
+bool Web_TakeParams(WebParams *p)
+{
+  *p = params;
+  bool changed = paramsNew;
+  paramsNew = false;
+  return changed;
+}
+
+uint8_t Web_TakeCommand(void)
+{
+  uint8_t c = command;
+  command = WEB_CMD_NONE;
+  return c;
+}
+
+void Web_SetRun(const char *phase, bool isRunning, float setpoint, uint8_t power, uint32_t elapsed)
+{
+  runPhase = phase;
+  running = isRunning;
+  runSetpoint = setpoint;
+  runPower = power;
+  runElapsed = elapsed;
 }
